@@ -1,0 +1,13 @@
+soundfiles:
+    startup: /home/pi/telefon/ringtones/startup1.wav
+    shutdown: /home/pi/telefon/ringtones/shutdown1.wav
+    ringtone: /home/pi/telefon/ringtones/aselektriskbureau.wav
+    busytone: /home/pi/telefon/ringtones/Old_North_American_busy_signal.wav
+    timeout: /home/pi/telefon/ringtones/roh.wav
+    dialtone: /home/pi/telefon/ringtones/dialtone.wav
+
+sip:
+    username: sip_username
+    password: sip_password
+    hostname: sip.example.com
+    port: 5060
