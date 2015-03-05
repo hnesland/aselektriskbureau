@@ -17,3 +17,5 @@ SIP-connection.
 There is some code to use Pjsip, but it's not finished. 
 
 For more information on the build, see http://imgur.com/a/HECDL/.
+
+![Phone](phone.jpg)
