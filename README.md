@@ -8,6 +8,8 @@ I have next to zero expirience with Raspbery Pi, electronics and very little pyt
 
 Guide is localized to Poland, most links to shops, items, etc. will lead to polish shops and allegro. But google and ebay are your friend and _all_ of the components are available worldwide (and usually the cheapest option comes from alliexpress).
 
+---
+
 ## Bill of Materials
 
 ### Basic
@@ -20,14 +22,24 @@ Guide is localized to Poland, most links to shops, items, etc. will lead to poli
 ### Optional
 
 * WIFI USB Dongle - 15 PLN - [Allegro](http://allegro.pl/listing/listing.php?order=d&string=USB+wifi+&search_scope=wszystkie+dzia%C5%82y), [Official shop](http://swag.raspberrypi.org/collections/pi-kits/products/official-raspberry-pi-wifi-dongle) - It's good to check if the model you choose is supported under Linux (everything that works under linux should also work under RPi). Buy if you want to use Wifi instead of Ethernet cable
-* Xiaomi Power Bank - _optional_ - 70 PLN [Allegro](http://allegro.pl/listing/listing.php?order=d&string=xiaomi+5200&search_scope=wszystkie+działy). Buy if you plan on making your phone completelly wireless (at least for periods of time). It's absolutelly _crucial_ that the power bank has _pass-through_ feature, that allows it to charge while at the same time providing power to RPi. Make sure you get genuine Xiami Mi power bank - counterfits do not offer that feature. You can get large versions of power bank to (10400 and 160000 mAh) if you want for your phone to last longer on battery.
+* Xiaomi Power Bank - 70 PLN [Allegro](http://allegro.pl/listing/listing.php?order=d&string=xiaomi+5200&search_scope=wszystkie+działy). Buy if you plan on making your phone completelly wireless (at least for periods of time). It's absolutelly _crucial_ that the power bank has _pass-through_ feature, that allows it to charge while at the same time providing power to RPi. Make sure you get genuine Xiami Mi power bank - counterfits do not offer that feature. You can get large versions of power bank to (10400 and 160000 mAh) if you want for your phone to last longer on battery.
  
 ### Extras
 
 * Keyboard
 * HDMI cable (at least on one end :) )
 
+---
 
+## Raspbery Pi Setup
+
+
+
+---
+
+## Links
+
+* Installing Linphone on Raspberry Pi https://wiki.linphone.org/wiki/index.php/Raspberrypi:start
 
 
 
