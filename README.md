@@ -1,6 +1,6 @@
 # Software for Rotary VOIP Phone mod based on Raspbery Pi
 
-After seeing https://www.reddit.com/r/raspberry_pi/comments/2y21sd/i_converted_an_old_phone_to_voip_using_raspberry/ and  http://imgur.com/a/HECDL/ I've decided to create my own :)
+After seeing [This reddit post](https://www.reddit.com/r/raspberry_pi/comments/2y21sd/i_converted_an_old_phone_to_voip_using_raspberry/) and [image gallery](http://imgur.com/a/HECDL/) I've decided to create my own :)
 
 This repository of code - based on https://github.com/hnesland/aselektriskbureau also documents my progress and can serve as a tutorial on building your own phone.
 
@@ -12,15 +12,15 @@ Guide is localized to Poland, most links to shops, items, etc. will lead to poli
 
 ### Basic
 
-* Respbery Pi - Version 2 or 1B - Costs around 120 PLN - [Allegro][http://allegro.pl/listing/listing.php?order=d&string=raspberry+pi+512&search_scope=wszystkie+dzia%C5%82y]
-* USB sound card - 5 PLN [Allegro][http://allegro.pl/listing/listing.php?order=d&string=karta+dźwiękowa+usb&search_scope=wszystkie+działy] - As above, check if it works on Linux, but practically all of them do.
-* MicroSD Card - 20PLN - You can buy a SD card especially formated for RPi (with bootloader called NOOBs) from  [Official Shop][http://swag.raspberrypi.org/collections/frontpage/products/noobs-8gb-sd-card]. You can also buy any other brand one from allegro. RPi recommends Class 4 SD card with 8GB capacity. I got a GoodRAM one. Check http://elinux.org/RPi_SD_cards if card works with RPi before you buy! 
+* Respbery Pi - Version 2 or 1B - Costs around 120 PLN - [Allegro](http://allegro.pl/listing/listing.php?order=d&string=raspberry+pi+512&search_scope=wszystkie+dzia%C5%82y)
+* USB sound card - 5 PLN [Allegro](http://allegro.pl/listing/listing.php?order=d&string=karta+dźwiękowa+usb&search_scope=wszystkie+działy) - As above, check if it works on Linux, but practically all of them do.
+* MicroSD Card - 20PLN - You can buy a SD card especially formated for RPi (with bootloader called NOOBs) from  [Official Shop](http://swag.raspberrypi.org/collections/frontpage/products/noobs-8gb-sd-card). You can also buy any other brand one from allegro. RPi recommends Class 4 SD card with 8GB capacity. I got a GoodRAM one. Check http://elinux.org/RPi_SD_cards if card works with RPi before you buy! 
 * Micro USB power adapter. To power your raspberry Pi. If you have standard mobile usb charger, it'll work.
 
 ### Optional
 
-* WIFI USB Dongle - 15 PLN - [Allegro][http://allegro.pl/listing/listing.php?order=d&string=USB+wifi+&search_scope=wszystkie+dzia%C5%82y], [Official][http://swag.raspberrypi.org/collections/pi-kits/products/official-raspberry-pi-wifi-dongle] - It's good to check if the model you choose is supported under Linux (everything that works under linux should also work under RPi). Buy if you want to use Wifi instead of Ethernet cable
-* Xiaomi Power Bank - _optional_ - 70 PLN [Allegro][http://allegro.pl/listing/listing.php?order=d&string=xiaomi+5200&search_scope=wszystkie+działy]. Buy if you plan on making your phone completelly wireless (at least for periods of time). It's absolutelly _crucial_ that the power bank has _pass-through_ feature, that allows it to charge while at the same time providing power to RPi. Make sure you get genuine Xiami Mi power bank - counterfits do not offer that feature. You can get large versions of power bank to (10400 and 160000 mAh) if you want for your phone to last longer on battery.
+* WIFI USB Dongle - 15 PLN - [Allegro](http://allegro.pl/listing/listing.php?order=d&string=USB+wifi+&search_scope=wszystkie+dzia%C5%82y), [Official shop](http://swag.raspberrypi.org/collections/pi-kits/products/official-raspberry-pi-wifi-dongle) - It's good to check if the model you choose is supported under Linux (everything that works under linux should also work under RPi). Buy if you want to use Wifi instead of Ethernet cable
+* Xiaomi Power Bank - _optional_ - 70 PLN [Allegro](http://allegro.pl/listing/listing.php?order=d&string=xiaomi+5200&search_scope=wszystkie+działy). Buy if you plan on making your phone completelly wireless (at least for periods of time). It's absolutelly _crucial_ that the power bank has _pass-through_ feature, that allows it to charge while at the same time providing power to RPi. Make sure you get genuine Xiami Mi power bank - counterfits do not offer that feature. You can get large versions of power bank to (10400 and 160000 mAh) if you want for your phone to last longer on battery.
  
 ### Extras
 
