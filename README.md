@@ -33,6 +33,15 @@ Guide is localized to Poland, most links to shops, items, etc. will lead to poli
 
 ## Raspbery Pi Setup
 
+Folllow a guide at https://www.raspberrypi.org/documentation/installation/ or steps bellow (if you're on Linux)
+
+* Download NOOBS from the site. `wget http://downloads.raspberrypi.org/NOOBS_latest`
+* While it's downloading insert SD Card into a reader.
+* Check which device it's listed at. `ls /dev/mmc*`
+* Make sure it's not mounted. Make _sure_ you're using correct device. `export RPI_SD_CARD=/dev/mmcblk0`
+* Wipe the SD Card partition table `parted $RPI_SD_CARD mklabel msdos` (Adjust device name as required)
+* Make partition for whole drive `parted $RPI_SD_CARD mkpart primary fat32 0% 100%`
+* 
 
 
 ---
