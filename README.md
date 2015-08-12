@@ -31,17 +31,49 @@ Guide is localized to Poland, most links to shops, items, etc. will lead to poli
 
 ---
 
-## Raspbery Pi Setup
+## Raspberry Pi Setup
 
-Folllow a guide at https://www.raspberrypi.org/documentation/installation/ or steps bellow (if you're on Linux)
+Folllow a guide at https://www.raspberrypi.org/documentation/installation/ or steps bellow if you're on Linux (based on: http://qdosmsq.dunbar-it.co.uk/blog/2013/06/noobs-for-raspberry-pi/ )
 
-* Download NOOBS from the site. `wget http://downloads.raspberrypi.org/NOOBS_latest`
-* While it's downloading insert SD Card into a reader.
-* Check which device it's listed at. `ls /dev/mmc*`
-* Make sure it's not mounted. Make _sure_ you're using correct device. `export RPI_SD_CARD=/dev/mmcblk0`
-* Wipe the SD Card partition table `parted $RPI_SD_CARD mklabel msdos` (Adjust device name as required)
-* Make partition for whole drive `parted $RPI_SD_CARD mkpart primary fat32 0% 100%`
-* 
+    # Download NOOBS from the site. 
+    wget http://downloads.raspberrypi.org/NOOBS_latest
+
+    # While it's downloading insert SD Card into a reader.
+    # Check which device it's listed at. 
+    ls /dev/mmc*
+
+    # Check if it's not mounted. Make _sure_ you're using correct device. 
+    export RPI_SD_CARD=/dev/mmcblk0
+
+    # Wipe the SD Card partition table 
+    parted $RPI_SD_CARD mklabel msdos
+
+    # Make partition for whole drive 
+    parted $RPI_SD_CARD mkpart primary fat32 0% 100%
+    
+    # Format the partition 
+    export RPI_PARTITION="${RPI_SD_CARD}p1"
+    mkfs.vfat $RPI_PARTITION
+
+    # Mount the partition
+    mkdir rpi
+    mount $RPI_PARTITION rpi
+    cd rpi
+
+    # unzip the NOOBS
+    unzip ../NOOBS_v1_*.zip 
+
+    # Unmount SD card
+    cd ../
+    umount rpi
+    rmdir rpi
+
+Insert the SD card into your RaspberryPi, **with the power disconnected** and then connect or turn on the power.
+
+After powering up. Install Raspbian (+ optional data partition) on your RPi (this might take a while ~ 30min).
+After installation you can configure machine (eg. change password, set time zone, languages, etc.).
+After configuration, reset RPi and log in. Defaults are login: pi password: raspberry
+
 
 
 ---
