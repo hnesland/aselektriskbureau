@@ -68,19 +68,102 @@ Folllow a guide at https://www.raspberrypi.org/documentation/installation/ or st
     umount rpi
     rmdir rpi
 
+### Installing and running Raspbian
+
 1. Insert the SD card into your RaspberryPi, **with the power disconnected** and then connect or turn on the power.
 1. After powering up. Install Raspbian (+ optional data partition) on your RPi (this might take a while ~ 30min).
-2. After installation you can configure machine (eg. change password, set time zone, languages, etc.).
-3. After configuration, reset RPi and log in. Defaults are login: pi password: raspberry
+2. After installation you can configure machine (eg. change password, set time zone, languages, etc.). You should configure:
+  * Hostname (for logging in later).
+  * Enable the SSH server
+  * Time zone
+  * **Change password!**
+3. After configuration, reset RPi. and log in. Defaults are login: pi password: raspberry
 
+### Setting up the network connection
+
+If you're using ethernet then simply plugging in the cable should be enough.
+
+If you're using WIFI you might need to configure it either through GUI (which you start with `startx`), or via console by following this guide: https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md
+
+    sudo -i
+    iwlist wlan0 scan
+
+    nano /etc/wpa_supplicant/wpa_supplicant.conf
+    # Fill network details.
+    
+    ifup wlan0
+    tail -f /var/log/syslog
+    # Observe logs and check if it connects sucessfully
+    
+    # Check your IP address. Replace wlan0 with eth0 if you're using cable. You can simply call `ifconfig` to get all the information.
+    ifconfig wlan0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'
+
+Once you get the IP address you can perform rest of the operations by logging in to your RPi via ssh.
+
+    ssh pi@192.168.1.2 # Set IP number you've got in previous step. In some cases you might be able to use hostname you've set in setup.
+
+### Setup SSH keys.
+
+We'll now setup a public key on our raspberry pi to login without password.
+
+    # Login to RPi.
+    ssh pi@192.168.1.23
+
+    mkdir .ssh
+    chmod 700 .ssh
+    touch .ssh/authorized_keys
+    chmod 600 .ssh/authorized_keys 
+
+    exit # Logout
+
+    # Generate a private/public SSH keys if needed.
+    if [ ! -f ~/.ssh/id_rsa.pub ]; then ssh-keygen -t rsa -b 4096 -C "your_email@example.com"; fi
+
+    cat ~/.ssh/id_rsa.pub | ssh pi@192.168.1.23 'cat >> ~/.ssh/authorized_keys'
+    # type in password for the last time.
+
+### Update your system
+
+    # Updates a system
+    sudo apt-get update && sudo apt-get upgrade
+    
+    # Install pything dependencies. This step is optional.
+    sudo apt-get install python-dev libffi-dev libssl-dev -y
+  
+### Installing linphone
+
+
+Installing Linphone on Raspberry Pi based on https://wiki.linphone.org/wiki/index.php/Raspberrypi:start
+
+    # Download linphone for raspberry. Make sure uit's the newest release.
+    wget http://linphone.org/releases/linphone-python-raspberry/linphone4raspberry-3.8.0-cp27-none-any.whl
+
+    # Rest needs to be done as root.
+
+    # Install pip (Python package manager)
+    sudo apt-get install python-setuptools -y
+    sudo easy_install pip
+
+    # Install wheel packages
+    sudo pip install wheel
+    sudo pip install --upgrade pip
+
+    # Finaly instaLL linphone package
+    sudo pip install linphone4raspberry-3.8.0-cp27-none-any.whl
+    
+    python -c 'import linphone; print "Ok"'
+    # If it prints just "OK" then it's ok. If it throws a fit, you've fucked up something :)
+
+### Download software.
+
+    git clone https://github.com/Szpeja/RotaryPi.git
 
 
 ---
 
 ## Links
 
-* Installing Linphone on Raspberry Pi https://wiki.linphone.org/wiki/index.php/Raspberrypi:start
-
+* 
 
 
 
