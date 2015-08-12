@@ -68,11 +68,10 @@ Folllow a guide at https://www.raspberrypi.org/documentation/installation/ or st
     umount rpi
     rmdir rpi
 
-Insert the SD card into your RaspberryPi, **with the power disconnected** and then connect or turn on the power.
-
-After powering up. Install Raspbian (+ optional data partition) on your RPi (this might take a while ~ 30min).
-After installation you can configure machine (eg. change password, set time zone, languages, etc.).
-After configuration, reset RPi and log in. Defaults are login: pi password: raspberry
+1. Insert the SD card into your RaspberryPi, **with the power disconnected** and then connect or turn on the power.
+1. After powering up. Install Raspbian (+ optional data partition) on your RPi (this might take a while ~ 30min).
+2. After installation you can configure machine (eg. change password, set time zone, languages, etc.).
+3. After configuration, reset RPi and log in. Defaults are login: pi password: raspberry
 
 
 
