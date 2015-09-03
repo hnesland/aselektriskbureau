@@ -22,7 +22,7 @@ Guide is localized to Poland, most links to shops, items, etc. will lead to poli
 ### Optional
 
 * WIFI USB Dongle - 15 PLN - [Allegro](http://allegro.pl/listing/listing.php?order=d&string=USB+wifi+&search_scope=wszystkie+dzia%C5%82y), [Official shop](http://swag.raspberrypi.org/collections/pi-kits/products/official-raspberry-pi-wifi-dongle) - It's good to check if the model you choose is supported under Linux (everything that works under linux should also work under RPi). Buy if you want to use Wifi instead of Ethernet cable
-* Xiaomi Power Bank - 70 PLN [Allegro](http://allegro.pl/listing/listing.php?order=d&string=xiaomi+5200&search_scope=wszystkie+działy). Buy if you plan on making your phone completelly wireless (at least for periods of time). It's absolutelly _crucial_ that the power bank has _pass-through_ feature, that allows it to charge while at the same time providing power to RPi. Make sure you get genuine Xiami Mi power bank - counterfits do not offer that feature. You can get large versions of power bank to (10400 and 160000 mAh) if you want for your phone to last longer on battery.
+* Xiaomi Power Bank - 70 PLN [Allegro](http://allegro.pl/listing/listing.php?order=d&string=xiaomi+5200&search_scope=wszystkie+działy). Buy if you plan on making your phone completelly wireless (at least for periods of time). It's absolutelly _crucial_ that the power bank has _pass-through_ feature, that allows it to charge while at the same time providing power to RPi. Make sure you get genuine Xiami Mi power bank - counterfits do not offer that feature [Identification Guide](https://www.techmesto.com/identify-fake-xiaomi-power-bank/). You can get larger versions of power bank to (10400 and 160000 mAh) if you want for your phone to last longer on battery, keep in mind they also have larger physical dimensions.
  
 ### Extras
 
@@ -146,9 +146,13 @@ Installing Linphone on Raspberry Pi based on https://wiki.linphone.org/wiki/inde
 
     # Install wheel packages
     sudo pip install wheel
-    sudo pip install --upgrade pip
+    sudo pip install pip --upgrade
+    sudo pip install setuptools --upgrade
 
-    # Finaly instaLL linphone package
+    # Install security update to requests library. Optional (will clear warnings), requires python-dev libffi-dev and libssl-dev installed in step above
+    sudo pip install requests[security]
+
+    # Finaly install linphone package
     sudo pip install linphone4raspberry-3.8.0-cp27-none-any.whl
     
     python -c 'import linphone; print "Ok"'
