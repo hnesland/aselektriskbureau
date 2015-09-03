@@ -6,7 +6,7 @@ Raspberry PI - Meaning on Raspberry PI
 The 15 wide ribbon cable is attached so it is centered and two pins are free on either side (of RPi B)
 
 | L  | BB  | L  | Raspberry Pi    | Raspberry Pi   | R   | BB    |
-| -- | --- | -- | --------------- | -------------- | --  | ----- |
+| ---| --- | ---| --------------- | -------------- | --- | ----- |
 |    | +5V |    |                 |                |     | +3.3V |
 | 1  | B1  | 1  | 3v3 Power       | 5v Power       | 2   | B2    |
 | 2  | B3  | 3  | BCM 2 (SDA)     | 5v Power       | 4   | B4    |
