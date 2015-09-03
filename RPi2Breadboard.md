@@ -1,4 +1,4 @@
-Mapping from Raspberry Pi (V1 B) to Breadboard (Smartduino kind)
+Mapping from Raspberry Pi (V1 B) to Breadboard (Smartduino kind). 
 
 RC - Ribbon Cable
 
@@ -6,7 +6,7 @@ BB - Symbol on Breadboard
 
 Raspberry PI - Meaning on Raspberry PI
 
-The 15 wide ribbon cable is attached so it is centered and two pins are free on either side (of RPi B)
+Mapping assumes the 15 wide ribbon cable is attached so it is centered and two pins are free on either side (of RPi B) with cable "tooth" is facing inside of RPi.
 
 | L  | BB  | Pin | Raspberry Pi    | Raspberry Pi   | Pin | BB    | R  |
 | ---| --- | --- | --------------- | -------------- | --- | ----- | ---|
