@@ -1,10 +1,10 @@
 import RPi.GPIO as GPIO
 
-class Tester
+class Tester:
   def __init__(self):
-    board_mode()
-    setup()
-    light()
+    self.board_mode()
+    self.setup()
+    self.light()
 
   def board_mode(self):
     GPIO.setmode(GPIO.BOARD)
@@ -25,14 +25,9 @@ class Tester
 
   def test(self):
     while True:
-      light()
+      self.light()
 
   def cleanup(self):
     GPIO.cleanup()    
 
     
-tester = Tester()
-
-tester.test()
-tester.cleanup()
-
