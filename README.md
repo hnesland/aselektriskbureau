@@ -187,7 +187,7 @@ This was promissing developemnt, in theory I could have just started counting _H
 
 First I've tried counting impulses all the time and then just displaying result when rotating pin goes _HIGH_ again.
 
-That didn't exactly work well, and exprimenting with debouncing did not yield expected results, so I threw out all the debouncing and instead created a counter class which counts all triggers and after half a second since last one prints the timing table. See [counter.py @ 2079f98](/Szpeja/RotaryPi/blob/2079f98/counter.py)
+That didn't exactly work well, and exprimenting with debouncing did not yield expected results, so I threw out all the debouncing and instead created a counter class which counts all triggers and after half a second since last one prints the timing table. See [counter.py @ 2079f98](https://github.com/Szpeja/RotaryPi/blob/2079f98/counter.py)
 
 ---
 
