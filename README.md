@@ -165,6 +165,26 @@ Installing Linphone on Raspberry Pi based on https://wiki.linphone.org/wiki/inde
 
 ---
 
+# Hardware setup
+
+First of all I had to figure out how the dial works.
+
+I set up a breadboard and connected it to Raspberry PI. The breadboard and 2 other connecting boards I've used came from failed Kickstarter project I've contributed to (I got _some_ of the parts I've paid for). 
+I hoped the'll be useful here as they allowed me to easilly connect Raspberry PI to a breadboard using cable. It turned out not to be as easy. 
+First of all boards were initialy made for arduino pins, second, while idea behind those was quite nice, the implementation was shity, mislabeled pins, shorted traces, etc.
+
+So after figuring out which pin on cable connects to which pin on breadboard I've come to the conclusion that some pins on breadboard were shorted, which could unfortunately fry RPi if I connected it to the breadboard. Luckilly I caught it in time and severed few traces on PCB which resulted in Pin 14 on BB to be connected to Pin 7 on RPi, and pin 14 to be not connected at all. But besides that everything seemed to work fine.
+
+Surprisingly the result of all that work was quite nice mapping that can be found in [RPi2Breadboard.md](RPi2Breadboard.md) except for unfortunate short of Pin 7 and 14 rest of mapping is 1-1 from markings on Breadboard to RPi board numbering. This works assuming the 15 wide tape is connected in the middle leaving 2 empty rows on each side of Raspberry Pi B.
+
+Next step was to setup a three external pull up resistors to make sure I don't fry RPi while debugging the rotary dial.
+
+To help with the debugging I wrote a small [tester](tester.py) which would light leds if cables get connected. My rotary dial had 4 cables so I quickly tested 6 possible connections making sure to rotate dial with each connection.
+
+The result was that White and Brown cables would be **on** when dial was rotated and Blue-Yellow pair would be **on** all the time except when number was passed.
+
+---
+
 ## Links
 
 * 
