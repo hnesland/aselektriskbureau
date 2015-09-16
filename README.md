@@ -183,6 +183,12 @@ To help with the debugging I wrote a small [tester](tester.py) which would light
 
 The result was that White and Brown cables would be **on** when dial was rotated and Blue-Yellow pair would be **on** all the time except when number was passed.
 
+This was promissing developemnt, in theory I could have just started counting _HIGH_ impulses after the rotating pin goes _LOW_. It turned out that it's not that simple. First of all impulses are triggered both on the way up and on the way down. Ok. So you can just count impulses and then divide them by 2. Right, except aparently some impulses can be triggered before rotating pin going _LOW_. So what now?
+
+First I've tried counting impulses all the time and then just displaying result when rotating pin goes _HIGH_ again.
+
+That didn't exactly work well, and exprimenting with debouncing did not yield expected results, so I threw out all the debouncing and instead created a counter class which counts all triggers and after half a second since last one prints the timing table. See [counter.py @ 2079f98](/Szpeja/RotaryPi/blob/2079f98/counter.py)
+
 ---
 
 ## Links
