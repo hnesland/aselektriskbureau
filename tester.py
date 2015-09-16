@@ -20,8 +20,11 @@ class Tester:
       GPIO.setup(p_out, GPIO.OUT)
 
   def light(self):
+    print("\r"),
     for p_in, p_out in self.in_to_out.iteritems():
       GPIO.output(p_out, not GPIO.input(p_in))
+      on = not GPIO.input(p_in)
+      print("%d: %s " % ( p_in, "ON " if on else "OFF" )),
 
   def test(self):
     while True:
