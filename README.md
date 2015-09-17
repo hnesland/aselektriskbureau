@@ -192,6 +192,9 @@ See [counter.py @ 2079f98](https://github.com/Szpeja/RotaryPi/blob/2079f98/count
 
 After reviewing timing tables tehre clearly needs to be some debouncing done. I've started with value of 10ms. Unfortunately itturned out the GPIO library for Raspberry Pi is buggy and doesn't handle debouncing that well + aparently detecting edges does not work correctly either whebn set to _FALLING_ or _RISING_ and only _BOTH_ seems to work. This means I'll have to implement the whole logic on my side just like it was done by original author.
 
+After carefully inspecting the hardware rotor I've also found why sometimes extra pulses were emmited. The flywheel sometimes backed few milimeters causing old connection to disjoint and emit a very short pulse.
+
+
 ---
 
 ## Links

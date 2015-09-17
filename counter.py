@@ -10,7 +10,55 @@ import collections
 # 16  | 23  | Green
 # 18  | 24  | Red
 
-class Counter:
+class Rio:
+  pins = {}
+
+  @classmethod
+  def init(cls, mode=GPIO.BOARD)
+    GPIO.setmode(mode)
+
+  @classmethod
+  def pin(cls, number, in_or_out)
+    cls.pins[number] ||= cls(number, in_or_out)
+
+  def __init__(self, number, in_or_out):
+    self.number = number
+    self.in_or_out = in_or_out
+    self.bounce_time = 0 # ms
+
+    GPIO.setup(number, in_or_out)
+    if in_or_out == GPIO.IN:
+      self.event_time = time.time() * 1000
+      self.state = GPIO.input(self.number)
+      GPIO.add_event_detect(self.number, GPIO.BOTH, callback = self.Edge)
+      
+  def Edge(self, channel):
+    self.previous_time = self.event_time
+    self.previous_state = self.state
+
+    self.event_time = time.time() * 1000
+    self.state = GPIO.input(self.number)
+
+    if self.state == self.previous_state:
+      return # Ignore series of events with same state. Am I sure about this?
+    
+    if self.previous_time and self.event_time - self.previous_time < self.bounce_time
+      return # Debouncing in action
+
+    state_duration = (self.event_time - self.previous_time if self.previous_time else 0)
+
+    if self.state
+      self.rising(self.number) if self.rising
+    else
+      self.falling(self.number) if self.falling
+
+    self.changed(self.number, self.state) if self.changed
+  
+
+
+    
+
+class OldCounter:
   START = "Rotating START"
   FINISH = "Rotating FINISH"
   PULSE = "Pulse %d"
@@ -27,17 +75,6 @@ class Counter:
   rotations = 0
 
   def __init__(self):
-    GPIO.setmode(GPIO.BOARD)
-
-    GPIO.setup(self.pin_rotating, GPIO.IN)
-    GPIO.setup(self.pin_pulse,    GPIO.IN)
-
-    GPIO.setup(self.pout_rotating, GPIO.OUT)
-    GPIO.setup(self.pout_pulse,    GPIO.OUT)
-
-    GPIO.add_event_detect(self.pin_rotating, GPIO.BOTH, bouncetime = self.bounce_time, callback = self.Rotation)
-    GPIO.add_event_detect(self.pin_pulse,    GPIO.RISING, bouncetime = self.bounce_time, callback = self.NumberCounter)
-
     self.StartCounting()
 
   def Rotation(self, channel):
