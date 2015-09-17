@@ -3,6 +3,7 @@ from threading import Timer
 import time
 import atexit
 from collections import OrderedDict
+import collections
 
 # IN  | OUT | Color
 # 15  | 22  | Blue 
@@ -10,13 +11,18 @@ from collections import OrderedDict
 # 18  | 24  | Red
 
 class Counter:
+  START = "Rotating START"
+  FINISH = "Rotating FINISH"
+  PULSE = "Pulse %d"
+
   pin_rotating = 16
   pin_pulse    = 18
 
-  bounce_time = 50 #ms
-
   pout_rotating = 23
   pout_pulse    = 24
+
+  bounce_time = 30 # ms
+  return_threshold = 250 # ms
 
   rotations = 0
 
@@ -29,8 +35,8 @@ class Counter:
     GPIO.setup(self.pout_rotating, GPIO.OUT)
     GPIO.setup(self.pout_pulse,    GPIO.OUT)
 
-    GPIO.add_event_detect(self.pin_rotating, GPIO.BOTH,    callback = self.Rotation)
-    GPIO.add_event_detect(self.pin_pulse,    GPIO.FALLING, callback = self.NumberCounter)
+    GPIO.add_event_detect(self.pin_rotating, GPIO.BOTH, bouncetime = self.bounce_time, callback = self.Rotation)
+    GPIO.add_event_detect(self.pin_pulse,    GPIO.RISING, bouncetime = self.bounce_time, callback = self.NumberCounter)
 
     self.StartCounting()
 
@@ -40,44 +46,83 @@ class Counter:
 
     if self.rotating:
       # print "\nStarted rotation"
-      self.triggers[time.time()] = "Rotating START"
+      self.trigger(self.START)
     else:
-      self.triggers[time.time()] = "Rotating FINISH"
+      self.trigger(self.FINISH)
 
       r = self.rotations
       number = r / 2 + r % 2
-      print "\nFinished rotation: %d" % self.rotations 
-      print "Number: %d" % (number)
+      # print "\nFinished rotation: %d" % self.rotations 
+      # print "Number: %d" % (number)
 
-      Timer(0.5, self.Timing).start()
+      Timer(0.5, self.TimingSummary).start()
 
     self.rotations = 0
    
     
   def NumberCounter(self, channel):
-    self.triggers[time.time()] = "Pulse"
-    if self.rotating:
+    time.sleep(0.01) # 10ms
+
+    self.trigger(self.PULSE % GPIO.input(channel))
+    GPIO.output(self.pout_pulse, not GPIO.input(self.pin_pulse))
+
+    if self.rotating and (GPIO.input(channel) == 1):
       self.rotations += 1
-      print('.'),
-    else:
-      print('x'),
-
-
+ 
   def StartCounting(self):
-    self.start_time = time.time()
+    self.start_time = None
     self.triggers = OrderedDict()
 
-  def Timing(self):
+ 
+  def trigger(self, name):
+    t = int(round( time.time() * 1000 ))
+
+    if self.start_time is None:
+      self.start_time = t
+      self.prev_time  = t
+
+    print "%2d | %16s | +%6dms | %6dms " % (self.rotations, name, t - self.prev_time, t - self.start_time)
+    
+    self.prev_time = t
+    self.triggers[t] = name
+
+
+  def TimingSummary(self):
     'Print timing of triggers captured'
  
-    print "\n---\n"
     prev = 0
+    c = 0
 
+    c =  collections.Counter()
+    
+    states = iter(['pre_start', 'pre_threshold', 'post_threshold', 'post_finish'])
+    state = 'pre_start'
+
+    # print "%2s | %16s | %6sms | %6sms | %5s | %s " % ('LP', 'Trigger', 'Rel. ', 'Abs. ', 'Count', 'State')
     for tt, trigger in self.triggers.iteritems():
-      t = int(round( (tt - self.start_time) * 1000 ))
-      print "%16s | +%6dms | %10dms " % (trigger, t-prev, t) 
+      t = tt - self.start_time
+      diff = t - prev
+    
+      if trigger == self.START:
+        state = 'pre_threshold'
+      if state == 'pre_threshold' and (diff > self.return_threshold) :
+         state = 'post_threshold'
+      if state == 'post_threshold' and trigger == self.FINISH :
+         state = 'post_finish'
+        
+      
+      c['total'] += 1
+      c[state] += 1
+
+      # print "%2d | %16s | %6dms | %6dms | %d | %s " % (c['total'], trigger, diff, t, c[state], state)
+
       prev = t
+
       time.sleep(0.01) # For some strange reason sometimes flushing doesn't work correctly :/ adding this delay to help it print properly.
+
+    for k in states:
+      print("%s: %d" % (k, c[k])),
+    print("")
 
     self.StartCounting()
 
