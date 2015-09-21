@@ -5,6 +5,12 @@ import atexit
 from collections import OrderedDict
 import collections
 
+
+# IN  | OUT | Color
+# 15  | 22  | Blue
+# 16  | 23  | Green
+# 18  | 24  | Red
+
 class OldCounter:
     START = "Rotating START"
     FINISH = "Rotating FINISH"
