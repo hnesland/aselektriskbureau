@@ -8,8 +8,12 @@ class Rio:
     pins = {}
 
     @staticmethod
-    def init(cls, mode=GPIO.BOARD):
+    def init(mode=GPIO.BOARD):
         GPIO.setmode(mode)
+
+    @staticmethod
+    def cleanup():
+        GPIO.cleanup()
 
     @classmethod
     def pin(cls, number):
@@ -87,13 +91,13 @@ class Rin(Rio):
 
         if self.current_state == GPIO.HIGH:
             if self.rising:
-                self.rising(self.number, current_time, state_duration)
+                self.rising(current_time, state_duration)
         else:
             if self.falling:
-                self.falling(self.number, current_time, state_duration)
+                self.falling(current_time, state_duration)
 
         if self.changed:
-            self.changed(self.number, self.current_state, current_time, state_duration)
+            self.changed(self.current_state, current_time, state_duration)
 
 
 class Rout(Rio):
