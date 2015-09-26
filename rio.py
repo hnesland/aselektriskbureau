@@ -72,7 +72,7 @@ class Rin(Rio):
         necessarily expect. Ideally we'd like to get alternating stream of events.
         Keep it mind however that this is not a guarantee. It's possible to receive several HIGH signals in a anyway.
         """
-        if current_time - self.bounce_time < self.bounce_interval:
+        if self.bounce_interval and current_time - self.bounce_time < self.bounce_interval:
             self.bounce_time = current_time
 
             # We block the event if it happened to fast after previous one. But if it last longer then bounce timer
@@ -103,8 +103,7 @@ class Rin(Rio):
             self.changed(self.current_state, current_time, state_duration)
 
     def __ms_time(self):
-        return time.time() * 1000
-
+        return int(round(time.time() * 1000))
 
 class Rout(Rio):
     def __init__(self, number):
@@ -219,17 +218,16 @@ class RioTest:
         rin.rising = self.rising
         rin.falling = self.falling
 
-        print('Raise ...'),
+        print('Raise.')
         rout.high()
 
-        print('Fall ...'),
+        print('Fall.')
         rout.low()
 
-        print('Raise for one second, then fall ...'),
+        print('Raise for one second, then fall.')
         rout.high()
         time.sleep(1)
         rout.low()
-
 
     def rising(self, current_time, state_duration):
         self.rising_called = {'current_time': current_time, 'state_duration': state_duration}
