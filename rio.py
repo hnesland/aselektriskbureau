@@ -105,6 +105,7 @@ class Rin(Rio):
     def __ms_time(self):
         return round(time.time() * 1000)
 
+
 class Rout(Rio):
     def __init__(self, number):
         self.number = number
@@ -172,11 +173,25 @@ class RioTest:
         self.pin = pins['pin']
         self.pout = pins['pout']
 
+        self.rin = Rin(self.pin)
+        self.rout = Rout(self.pout)
+
         self.rising_called = None
         self.falling_called = None
         self.changed_called = None
 
-    def test(self):
+    @staticmethod
+    def result(expected, actual):
+        ok = '\033[92m'
+        fail = '\033[91m'
+        end = '\033[0m'
+
+        if expected == actual:
+            print ok + actual + end
+        else:
+            print fail + actual + end
+
+    def test_regular(self):
         rin = Rin(self.pin)
         rout = Rout(self.pout)
 
@@ -187,66 +202,63 @@ class RioTest:
         print 'HIGH (10ms delay) ...',
         rout.high()
         time.sleep(0.01)
-        print rin.text_state
+        self.result("HIGH", rin.text_state)
 
         print 'LOW  (10ms delay)...',
         rout.low()
         time.sleep(0.01)
-        print rin.text_state
+        self.result("LOW", rin.text_state)
 
         print 'HIGH (1ms delay) ...',
         rout.high()
         time.sleep(0.001)
-        print rin.text_state
+        self.result("HIGH", rin.text_state)
 
         print 'LOW  (1ms delay)...',
         rout.low()
         time.sleep(0.001)
-        print rin.text_state
+        self.result("LOW", rin.text_state)
 
         print 'HIGH (no delay)...',
         rout.high()
-        print rin.text_state
+        self.result("HIGH", rin.text_state)
 
         print 'LOW  (no delay)...',
         rout.low()
-        print rin.text_state
+        self.result("LOW", rin.text_state)
 
-        print 'Setting up callback tests'
+    def high(self, sleep_ms=0):
+        self.rout.high()
+        if sleep_ms:
+            time.sleep(sleep_ms / 1000)
 
-        rin.changed = self.changed
-        rin.rising = self.rising
-        rin.falling = self.falling
+    def low(self, sleep_ms=0):
+        self.rout.high()
+        if sleep_ms:
+            time.sleep(sleep_ms / 1000)
 
-        print "\nRaise."
-        rout.high()
-	time.sleep(0.1)
+    def test_callbacks(self):
+        print '\nSetting up callback tests'
 
-        print "\nFall."
-        rout.low()
-	time.sleep(0.1)
+        self.rin.changed = self.changed
+        self.rin.rising = self.rising
+        self.rin.falling = self.falling
 
-        print "\nRaise for one second, then fall."
-        rout.high()
-        time.sleep(1)
-        rout.low()
+        print "\nRaise 10ms delay."
+        self.high(10)
 
-        print "\nQuick raise and fall then raise again"
-        rout.high()
-        rout.low()
-        rout.high()
+        print "\nFall  10ms delay."
+        self.low(0.1)
 
-	time.sleep(0.1)
-	
+        print "\nRaise, Fall, Raise (5ms delay)"
+        self.high(5)
+        self.low(5)
+        self.high(5)
+
         print '\nQuick fall, raise and fall again'
-        rout.low()
-        rout.high()
-        rout.low()
-
-	time.sleep(0.1)
-
-	print 'Waiting one second for all tests to finish and timer to stop'
-	time.sleep(1)
+        self.low(5)
+        self.high(5)
+        self.low(5)
 
     def rising(self, current_time, state_duration):
         self.rising_called = {'current_time': current_time, 'state_duration': state_duration}
@@ -261,9 +273,13 @@ class RioTest:
         print 'Changed called', self.changed_called
 
 
-
 if __name__ == "__main__":
     Rio.init()
     tester = RioTest(pin=13, pout=11)
-    tester.test()
+    tester.test_regular()
+    tester.test_callbacks()
+
+    print 'Waiting one second for all tests to finish and timer to stop'
+    time.sleep(1)
+
     Rio.cleanup()
