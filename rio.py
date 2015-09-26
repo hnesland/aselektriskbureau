@@ -45,14 +45,16 @@ class Rin(Rio):
         self.bounce_time = self.event_time
         self.bounce_timer = None
 
+    @property
     def state(self):
-        GPIO.input(self.number)
+        return GPIO.input(self.number)
 
+    @property
     def text_state(self):
-        "HIGH" if self.state() else "LOW"
+        return "HIGH" if self.state else "LOW"
 
     def edge(self, channel):
-        self.event(self.__ms_time(), self.state())
+        self.event(self.__ms_time(), self.state)
 
     def event(self, current_time, current_state):
         """
@@ -175,30 +177,30 @@ if __name__ == "__main__":
         print('High for 0.1s (with 10ms delay) ...'),
         rout.high()
         time.sleep(0.01)
-        print rin.text_state()
+        print rin.text_state
 
         print('Low for 0.1s (with 10ms delay)...'),
         rout.low()
         time.sleep(0.01)
-        print rin.text_state()
+        print rin.text_state
 
         print('High for 0.1s (with 1ms delay) ...'),
         rout.high()
         time.sleep(0.001)
-        print rin.text_state()
+        print rin.text_state
 
         print('Low for 0.1s (with 1ms delay)...'),
         rout.low()
         time.sleep(0.001)
-        print rin.text_state()
+        print rin.text_state
 
         print('High for 0.1s ...'),
         rout.high()
-        print rin.text_state()
+        print rin.text_state
 
         print('Low for 0.1s ...'),
         rout.low()
-        print rin.text_state()
+        print rin.text_state
 
         pass
 
