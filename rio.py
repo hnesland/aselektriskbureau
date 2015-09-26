@@ -72,7 +72,7 @@ class Rin(Rio):
         necessarily expect. Ideally we'd like to get alternating stream of events.
         Keep it mind however that this is not a guarantee. It's possible to receive several HIGH signals in a anyway.
         """
-        if self.bounce_interval and current_time - self.bounce_time < self.bounce_interval:
+        if current_time - self.bounce_time < self.bounce_interval:
             self.bounce_time = current_time
 
             # We block the event if it happened to fast after previous one. But if it last longer then bounce timer
@@ -103,7 +103,7 @@ class Rin(Rio):
             self.changed(self.current_state, current_time, state_duration)
 
     def __ms_time(self):
-        return int(round(time.time() * 1000))
+        return round(time.time() * 1000)
 
 class Rout(Rio):
     def __init__(self, number):
@@ -180,35 +180,35 @@ class RioTest:
         rin = Rin(self.pin)
         rout = Rout(self.pout)
 
-        print 'HIGH for 3 seconds (check if led is on).'
+        print 'HIGH for 1 second (check if led is on).'
         rout.high()
-        time.sleep(3)
+        time.sleep(1)
 
-        print('HIGH (10ms delay) ...'),
+        print 'HIGH (10ms delay) ...',
         rout.high()
         time.sleep(0.01)
         print rin.text_state
 
-        print('LOW  (10ms delay)...'),
+        print 'LOW  (10ms delay)...',
         rout.low()
         time.sleep(0.01)
         print rin.text_state
 
-        print('HIGH (1ms delay) ...'),
+        print 'HIGH (1ms delay) ...',
         rout.high()
         time.sleep(0.001)
         print rin.text_state
 
-        print('LOW  (1ms delay)...'),
+        print 'LOW  (1ms delay)...',
         rout.low()
         time.sleep(0.001)
         print rin.text_state
 
-        print('HIGH (no delay)...'),
+        print 'HIGH (no delay)...',
         rout.high()
         print rin.text_state
 
-        print('LOW  (no delay)...'),
+        print 'LOW  (no delay)...',
         rout.low()
         print rin.text_state
 
@@ -218,16 +218,35 @@ class RioTest:
         rin.rising = self.rising
         rin.falling = self.falling
 
-        print('Raise.')
+        print "\nRaise."
         rout.high()
+	time.sleep(0.1)
 
-        print('Fall.')
+        print "\nFall."
         rout.low()
+	time.sleep(0.1)
 
-        print('Raise for one second, then fall.')
+        print "\nRaise for one second, then fall."
         rout.high()
         time.sleep(1)
         rout.low()
+
+        print "\nQuick raise and fall then raise again"
+        rout.high()
+        rout.low()
+        rout.high()
+
+	time.sleep(0.1)
+	
+        print '\nQuick fall, raise and fall again'
+        rout.low()
+        rout.high()
+        rout.low()
+
+	time.sleep(0.1)
+
+	print 'Waiting one second for all tests to finish and timer to stop'
+	time.sleep(1)
 
     def rising(self, current_time, state_duration):
         self.rising_called = {'current_time': current_time, 'state_duration': state_duration}
@@ -240,6 +259,7 @@ class RioTest:
     def changed(self, current_state, current_time, state_duration):
         self.changed_called = {'current_state': current_state, 'current_time': current_time, 'state_duration': state_duration}
         print 'Changed called', self.changed_called
+
 
 
 if __name__ == "__main__":
