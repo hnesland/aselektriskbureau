@@ -21,75 +21,6 @@ class Rio:
         if number not in cls.pins:
             cls.pins[number] = cls(number)
 
-    @staticmethod
-    def test(**pins):
-        """
-        This method performs physical tests for the Rin and Rout classes. This needs to be run on the actual RPi,
-        and requires connecting out to in via current limiting resistor, according to the circuit drawn bellow.
-
-        IN[13]    OUT[11]
-        o         o
-        |   ___   |
-        \--|___|--o----\
-           1kOhm  |    |
-                 .-.  ___
-           10kOhm| |  \ /  LED Diode (with ~270 Ohm resistor) [optional]
-                 '-'  ---
-                  |    |
-                  o----/
-                  |
-                  o GND[9]
-
-        This way, when OUT is pulled HIGH the input should also register HIGH state, and if the output is not powered
-        the input should also be in LOW state.
-
-        The 1kOhm resistor is meant to protect the chip in case pins are setup incorrectly and 10k Ohm resistor is meant
-         to limit current flowing through the circuit ( Lookup Pull-Down/Pull-Up conecept here:
-         http://elinux.org/RPi_Tutorial_EGHS:Switch_Input ).
-
-        You can optionally add a diode with resistor in series to limit current, which resistor exactly you need you can
-         learn here: http://www.instructables.com/id/Choosing-The-Resistor-To-Use-With-LEDs/?ALLSTEPS
-
-        :param pin: Pin number for input (numbered by board number or BCM depending on value passed to init()
-        :param pout: Pin number for output (numbered by board number or BCM depending on value passed to init()
-        :return:
-        """
-
-        rin = Rin(pins['pin'])
-        rout = Rout(pins['pout'])
-
-        print 'HIGH for 3 seconds (check if led is on).'
-        rout.high()
-        time.sleep(3)
-
-        print('High for 0.1s (with 10ms delay) ...'),
-        rout.high()
-        time.sleep(0.01)
-        print rin.text_state
-
-        print('Low for 0.1s (with 10ms delay)...'),
-        rout.low()
-        time.sleep(0.01)
-        print rin.text_state
-
-        print('High for 0.1s (with 1ms delay) ...'),
-        rout.high()
-        time.sleep(0.001)
-        print rin.text_state
-
-        print('Low for 0.1s (with 1ms delay)...'),
-        rout.low()
-        time.sleep(0.001)
-        print rin.text_state
-
-        print('High for 0.1s ...'),
-        rout.high()
-        print rin.text_state
-
-        print('Low for 0.1s ...'),
-        rout.low()
-        print rin.text_state
-
     def __init__(self):
         pass
 
@@ -204,7 +135,117 @@ class Rout(Rio):
             Timer(timeout, self.flip).start()
 
 
-if __name__ == "__main__":
+class RioTest:
+    """
+        This class performs physical tests for the Rin and Rout classes. This needs to be run on the actual RPi,
+        and requires connecting out to in via current limiting resistor, according to the circuit drawn bellow.
 
+        IN[13]    OUT[11]
+        o         o
+        |   ___   |
+        \--|___|--o----\
+           1kOhm  |    |
+                 .-.  ___
+           10kOhm| |  \ /  LED Diode (with ~270 Ohm resistor) [optional]
+                 '-'  ---
+                  |    |
+                  o----/
+                  |
+                  o GND[9]
+
+        This way, when OUT is pulled HIGH the input should also register HIGH state, and if the output is not powered
+        the input should also be in LOW state.
+
+        The 1kOhm resistor is meant to protect the chip in case pins are setup incorrectly and 10k Ohm resistor is meant
+         to limit current flowing through the circuit ( Lookup Pull-Down/Pull-Up conecept here:
+         http://elinux.org/RPi_Tutorial_EGHS:Switch_Input ).
+
+        You can optionally add a diode with resistor in series to limit current, which resistor exactly you need you can
+         learn here: http://www.instructables.com/id/Choosing-The-Resistor-To-Use-With-LEDs/?ALLSTEPS
+    """
+
+    def __init__(self, **pins):
+        """
+            :param pin: Pin number for input (numbered by board number or BCM depending on value passed to init()
+            :param pout: Pin number for output (numbered by board number or BCM depending on value passed to init()
+        """
+
+        self.pin = pins['pin']
+        self.pout = pins['pout']
+
+        self.rising_called = None
+        self.falling_called = None
+        self.changed_called = None
+
+    def test(self):
+        rin = Rin(self.pin)
+        rout = Rout(self.pout)
+
+        print 'HIGH for 3 seconds (check if led is on).'
+        rout.high()
+        time.sleep(3)
+
+        print('HIGH (10ms delay) ...'),
+        rout.high()
+        time.sleep(0.01)
+        print rin.text_state
+
+        print('LOW  (10ms delay)...'),
+        rout.low()
+        time.sleep(0.01)
+        print rin.text_state
+
+        print('HIGH (1ms delay) ...'),
+        rout.high()
+        time.sleep(0.001)
+        print rin.text_state
+
+        print('LOW  (1ms delay)...'),
+        rout.low()
+        time.sleep(0.001)
+        print rin.text_state
+
+        print('HIGH (no delay)...'),
+        rout.high()
+        print rin.text_state
+
+        print('LOW  (no delay)...'),
+        rout.low()
+        print rin.text_state
+
+        print 'Setting up callback tests'
+
+        rin.changed = self.changed
+        rin.rising = self.rising
+        rin.falling = self.falling
+
+        print('Raise ...'),
+        rout.high()
+
+        print('Fall ...'),
+        rout.low()
+
+        print('Raise for one second, then fall ...'),
+        rout.high()
+        time.sleep(1)
+        rout.low()
+
+
+    def rising(self, current_time, state_duration):
+        self.rising_called = {'current_time': current_time, 'state_duration': state_duration}
+        print 'Rising called', self.rising_called
+
+    def falling(self, current_time, state_duration):
+        self.falling_called = {'current_time': current_time, 'state_duration': state_duration}
+        print 'Falling called', self.falling_called
+
+    def changed(self, current_state, current_time, state_duration):
+        self.changed_called = {'current_state': current_state, 'current_time': current_time, 'state_duration': state_duration}
+        print 'Changed called', self.changed_called
+
+
+if __name__ == "__main__":
     Rio.init()
-    Rio.test(pin=13, pout=11)
+    tester = RioTest(pin=13, pout=11)
+    tester.test()
+    Rio.cleanup()
