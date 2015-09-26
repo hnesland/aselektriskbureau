@@ -17,9 +17,10 @@ class Rio:
         GPIO.cleanup()
 
     @classmethod
-    def pin(cls, number):
+    def get(cls, number):
         if number not in cls.pins:
             cls.pins[number] = cls(number)
+        return cls.pins[number]
 
     def __init__(self):
         pass
@@ -173,8 +174,8 @@ class RioTest:
         self.pin = pins['pin']
         self.pout = pins['pout']
 
-        self.rin = Rin(self.pin)
-        self.rout = Rout(self.pout)
+        self.rin = Rin.get(self.pin)
+        self.rout = Rout.get(self.pout)
 
         self.rising_called = None
         self.falling_called = None
@@ -192,8 +193,8 @@ class RioTest:
             print fail + actual + end
 
     def test_regular(self):
-        rin = Rin(self.pin)
-        rout = Rout(self.pout)
+        rin  = Rin.get(self.pin)
+        rout = Rout.get(self.pout)
 
         print 'HIGH for 1 second (check if led is on).'
         rout.high()
