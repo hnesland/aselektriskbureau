@@ -135,25 +135,22 @@ class Rout(Rio):
 
 
 if __name__ == "__main__":
-    def test(pin, pout):
+    def test(**pins):
         """
         This method performs physical tests for the Rin and Rout classes. This needs to be run on the actual RPi,
         and requires connecting out to in via current limiting resistor, according to the circuit drawn bellow.
 
-         o OUT
-         |
-        ___
-        \ / - LED Diode (optional)
-        ---
-         |   ___
-         o--|___|---o IN
-         |  1kOhm
-        .-.
-        | |
-        | | 10k Ohm
-        '-'
-         |
-         o GND
+              OUT o
+        IN  ___   |
+        o--|___|--o----\
+           1kOhm  |    |
+                 .-.  ___
+          10kOhm | |  \ /  LED Diode (with ~270 Ohm resistor) [optional]
+                 '-'  ---
+                  |    |
+                  o----/
+                  |
+              GND o
 
         This way, when OUT is pulled HIGH the input should also register HIGH state, and if the output is not powered
         the input should also be in LOW state.
@@ -162,13 +159,16 @@ if __name__ == "__main__":
          to limit current flowing through the circuit ( Lookup Pull-Down/Pull-Up conecept here:
          http://elinux.org/RPi_Tutorial_EGHS:Switch_Input ).
 
+        You can optionally add a diode with resistor in series to limit current, which resistor exactly you need you can
+         learn here: http://www.instructables.com/id/Choosing-The-Resistor-To-Use-With-LEDs/?ALLSTEPS
+
         :param pin: Pin number for input (numbered by board number or BCM depending on value passed to init()
         :param pout: Pin number for output (numbered by board number or BCM depending on value passed to init()
         :return:
         """
 
-        rin = Rin(pin)
-        rout = Rout(pout)
+        rin = Rin(pins['pin'])
+        rout = Rout(pins['pout'])
 
         print 'HIGH for 3 seconds (check if led is on).'
         rout.high()
@@ -205,4 +205,4 @@ if __name__ == "__main__":
         pass
 
 
-    test()
+    test(pin=13, pout=11)
