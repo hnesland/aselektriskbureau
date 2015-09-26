@@ -33,7 +33,10 @@ class Rin(Rio):
         self.number = number
         self.bounce_interval = 0  # ms
 
-        self.event_time = time.time() * 1000
+        GPIO.setup(number, GPIO.IN)
+        GPIO.add_event_detect(self.number, GPIO.BOTH, callback=self.edge)
+
+        self.event_time = self.__ms_time()
         self.current_state = GPIO.input(self.number)
 
         self.previous_time = self.event_time
@@ -42,9 +45,6 @@ class Rin(Rio):
         self.bounce_time = self.event_time
         self.bounce_timer = None
 
-        GPIO.setup(number, GPIO.IN)
-        GPIO.add_event_detect(self.number, GPIO.BOTH, callback=self.edge)
-
     def state(self):
         GPIO.input(self.number)
 
@@ -52,7 +52,7 @@ class Rin(Rio):
         "HIGH" if self.state() else "LOW"
 
     def edge(self, channel):
-        self.event(time.time() * 1000, self.state())
+        self.event(self.__ms_time(), self.state())
 
     def event(self, current_time, current_state):
         """
@@ -98,6 +98,9 @@ class Rin(Rio):
 
         if self.changed:
             self.changed(self.current_state, current_time, state_duration)
+
+    def __ms_time(self):
+        return time.time() * 1000
 
 
 class Rout(Rio):
