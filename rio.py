@@ -4,6 +4,7 @@ import RPi.GPIO as GPIO
 from threading import Timer
 import time
 
+
 class Rio:
     pins = {}
 
@@ -19,6 +20,75 @@ class Rio:
     def pin(cls, number):
         if number not in cls.pins:
             cls.pins[number] = cls(number)
+
+    @staticmethod
+    def test(**pins):
+        """
+        This method performs physical tests for the Rin and Rout classes. This needs to be run on the actual RPi,
+        and requires connecting out to in via current limiting resistor, according to the circuit drawn bellow.
+
+        IN[13]    OUT[11]
+        o         o
+        |   ___   |
+        \--|___|--o----\
+           1kOhm  |    |
+                 .-.  ___
+           10kOhm| |  \ /  LED Diode (with ~270 Ohm resistor) [optional]
+                 '-'  ---
+                  |    |
+                  o----/
+                  |
+                  o GND[9]
+
+        This way, when OUT is pulled HIGH the input should also register HIGH state, and if the output is not powered
+        the input should also be in LOW state.
+
+        The 1kOhm resistor is meant to protect the chip in case pins are setup incorrectly and 10k Ohm resistor is meant
+         to limit current flowing through the circuit ( Lookup Pull-Down/Pull-Up conecept here:
+         http://elinux.org/RPi_Tutorial_EGHS:Switch_Input ).
+
+        You can optionally add a diode with resistor in series to limit current, which resistor exactly you need you can
+         learn here: http://www.instructables.com/id/Choosing-The-Resistor-To-Use-With-LEDs/?ALLSTEPS
+
+        :param pin: Pin number for input (numbered by board number or BCM depending on value passed to init()
+        :param pout: Pin number for output (numbered by board number or BCM depending on value passed to init()
+        :return:
+        """
+
+        rin = Rin(pins['pin'])
+        rout = Rout(pins['pout'])
+
+        print 'HIGH for 3 seconds (check if led is on).'
+        rout.high()
+        time.sleep(3)
+
+        print('High for 0.1s (with 10ms delay) ...'),
+        rout.high()
+        time.sleep(0.01)
+        print rin.text_state
+
+        print('Low for 0.1s (with 10ms delay)...'),
+        rout.low()
+        time.sleep(0.01)
+        print rin.text_state
+
+        print('High for 0.1s (with 1ms delay) ...'),
+        rout.high()
+        time.sleep(0.001)
+        print rin.text_state
+
+        print('Low for 0.1s (with 1ms delay)...'),
+        rout.low()
+        time.sleep(0.001)
+        print rin.text_state
+
+        print('High for 0.1s ...'),
+        rout.high()
+        print rin.text_state
+
+        print('Low for 0.1s ...'),
+        rout.low()
+        print rin.text_state
 
     def __init__(self):
         pass
@@ -135,74 +205,6 @@ class Rout(Rio):
 
 
 if __name__ == "__main__":
-    def test(**pins):
-        """
-        This method performs physical tests for the Rin and Rout classes. This needs to be run on the actual RPi,
-        and requires connecting out to in via current limiting resistor, according to the circuit drawn bellow.
 
-              OUT o
-        IN  ___   |
-        o--|___|--o----\
-           1kOhm  |    |
-                 .-.  ___
-          10kOhm | |  \ /  LED Diode (with ~270 Ohm resistor) [optional]
-                 '-'  ---
-                  |    |
-                  o----/
-                  |
-              GND o
-
-        This way, when OUT is pulled HIGH the input should also register HIGH state, and if the output is not powered
-        the input should also be in LOW state.
-
-        The 1kOhm resistor is meant to protect the chip in case pins are setup incorrectly and 10k Ohm resistor is meant
-         to limit current flowing through the circuit ( Lookup Pull-Down/Pull-Up conecept here:
-         http://elinux.org/RPi_Tutorial_EGHS:Switch_Input ).
-
-        You can optionally add a diode with resistor in series to limit current, which resistor exactly you need you can
-         learn here: http://www.instructables.com/id/Choosing-The-Resistor-To-Use-With-LEDs/?ALLSTEPS
-
-        :param pin: Pin number for input (numbered by board number or BCM depending on value passed to init()
-        :param pout: Pin number for output (numbered by board number or BCM depending on value passed to init()
-        :return:
-        """
-
-        rin = Rin(pins['pin'])
-        rout = Rout(pins['pout'])
-
-        print 'HIGH for 3 seconds (check if led is on).'
-        rout.high()
-        time.sleep(3)
-
-        print('High for 0.1s (with 10ms delay) ...'),
-        rout.high()
-        time.sleep(0.01)
-        print rin.text_state
-
-        print('Low for 0.1s (with 10ms delay)...'),
-        rout.low()
-        time.sleep(0.01)
-        print rin.text_state
-
-        print('High for 0.1s (with 1ms delay) ...'),
-        rout.high()
-        time.sleep(0.001)
-        print rin.text_state
-
-        print('Low for 0.1s (with 1ms delay)...'),
-        rout.low()
-        time.sleep(0.001)
-        print rin.text_state
-
-        print('High for 0.1s ...'),
-        rout.high()
-        print rin.text_state
-
-        print('Low for 0.1s ...'),
-        rout.low()
-        print rin.text_state
-
-        pass
-
-
-    test(pin=13, pout=11)
+    Rio.init()
+    Rio.test(pin=13, pout=11)
