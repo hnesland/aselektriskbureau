@@ -187,6 +187,8 @@ class RioTest:
         self.falling_called = None
         self.changed_called = None
 
+        self.call_stack = []
+
     @staticmethod
     def result(expected, actual):
         ok = '\033[92m'
@@ -259,27 +261,38 @@ class RioTest:
         print "\nFall  100ms delay."
         self.low(100)
 
+        self.result(['Rising', 'Changed', 'Falling', 'Changed'], self.call_stack)
+
         print "\nRaise, Fall, Raise (%dms delay)" % delay
+        self.call_stack = []
+
         self.high(delay)
         self.low(delay)
         self.high(delay)
 
+        self.result(['Rising', 'Changed', 'Falling', 'Changed', 'Rising', 'Changed'], self.call_stack)
+
         print '\nFall, Raise, Fall (%dms delay)' % delay
+        self.call_stack = []
+
         self.low(delay)
         self.high(delay)
         self.low(delay)
+
+        self.result(['Rising', 'Changed', 'Falling', 'Changed', 'Rising', 'Changed'], self.call_stack)
+
 
     def rising(self, current_time, state_duration):
         self.rising_called = {'current_time': current_time, 'state_duration': state_duration}
-        print 'Rising called', self.rising_called
+        self.call_stack.append('Rising')
 
     def falling(self, current_time, state_duration):
         self.falling_called = {'current_time': current_time, 'state_duration': state_duration}
-        print 'Falling called', self.falling_called
+        self.call_stack.append('Falling')
 
     def changed(self, current_state, current_time, state_duration):
         self.changed_called = {'current_state': current_state, 'current_time': current_time, 'state_duration': state_duration}
-        print 'Changed called', self.changed_called
+        self.call_stack.append('Changed')
 
 
 if __name__ == "__main__":
