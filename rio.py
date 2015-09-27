@@ -231,12 +231,12 @@ class RioTest:
     def high(self, sleep_ms=0):
         self.rout.high()
         if sleep_ms:
-            time.sleep(sleep_ms / 1000)
+            time.sleep(sleep_ms / 1000.0)
 
     def low(self, sleep_ms=0):
-        self.rout.high()
+        self.rout.low()
         if sleep_ms:
-            time.sleep(sleep_ms / 1000)
+            time.sleep(sleep_ms / 1000.0)
 
     def test_callbacks(self):
         print '\nSetting up callback tests'
@@ -245,21 +245,23 @@ class RioTest:
         self.rin.rising = self.rising
         self.rin.falling = self.falling
 
-        print "\nRaise 10ms delay."
-        self.high(10)
+        delay = 5 #ms
 
-        print "\nFall  10ms delay."
-        self.low(0.1)
+        print "\nRaise 100ms delay."
+        self.high(100)
 
-        print "\nRaise, Fall, Raise (5ms delay)"
-        self.high(5)
-        self.low(5)
-        self.high(5)
+        print "\nFall  100ms delay."
+        self.low(100)
 
-        print '\nQuick fall, raise and fall again'
-        self.low(5)
-        self.high(5)
-        self.low(5)
+        print "\nRaise, Fall, Raise (%dms delay)" % delay
+        self.high(delay)
+        self.low(delay)
+        self.high(delay)
+
+        print '\nFall, Raise, Fall (%dms delay)' % delay
+        self.low(delay)
+        self.high(delay)
+        self.low(delay)
 
     def rising(self, current_time, state_duration):
         self.rising_called = {'current_time': current_time, 'state_duration': state_duration}
@@ -280,7 +282,7 @@ if __name__ == "__main__":
     tester.test_regular()
     tester.test_callbacks()
 
-    print 'Waiting one second for all tests to finish and timer to stop'
+    print '\n\nWaiting one second for all tests to finish and timer to stop'
     time.sleep(1)
 
     Rio.cleanup()
