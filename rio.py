@@ -1,12 +1,13 @@
 # Object Oriented GPIO manipulation for Raspberry Pi
 
 import RPi.GPIO as GPIO
-from threading import Timer
+from threading import Timer, Lock
 import time
 
 
 class Rio:
     pins = {}
+    lock = Lock()
 
     @staticmethod
     def init(mode=GPIO.BOARD):
@@ -18,8 +19,13 @@ class Rio:
 
     @classmethod
     def get(cls, number):
-        if number not in cls.pins:
-            cls.pins[number] = cls(number)
+        try:
+            cls.lock.acquire()
+            if number not in cls.pins:
+                cls.pins[number] = cls(number)
+        finally:
+            cls.lock.release()
+
         return cls.pins[number]
 
     def __init__(self):
