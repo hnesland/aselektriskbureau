@@ -193,12 +193,14 @@ class RioTest:
     def result(expected, actual):
         ok = '\033[92m'
         fail = '\033[91m'
+	exp = '\033[93m'
         end = '\033[0m'
 
         if expected == actual:
-            print ok + actual + end
+            print ok, actual, end
         else:
-            print fail + actual + end
+            print fail, actual, end
+            print "Expected", exp, expected, end
 
     def test_regular(self):
         rin  = Rin.get(self.pin)
@@ -279,8 +281,7 @@ class RioTest:
         self.high(delay)
         self.low(delay)
 
-        self.result(['Rising', 'Changed', 'Falling', 'Changed', 'Rising', 'Changed'], self.call_stack)
-
+        self.result(['Falling', 'Changed', 'Rising', 'Changed', 'Falling', 'Changed'], self.call_stack)
 
     def rising(self, current_time, state_duration):
         self.rising_called = {'current_time': current_time, 'state_duration': state_duration}
