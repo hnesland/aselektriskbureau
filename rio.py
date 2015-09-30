@@ -13,8 +13,9 @@ class Rio:
     def init(mode=GPIO.BOARD):
         GPIO.setmode(mode)
 
-    @staticmethod
-    def cleanup():
+    @classmethod
+    def cleanup(cls):
+        cls.pins = {}
         GPIO.cleanup()
 
     @classmethod
@@ -50,8 +51,76 @@ class Rin(Rio):
         self.previous_time = self.event_time
         self.previous_state = self.current_state
 
-        self.bounce_time = self.event_time
+        self.bounce_time = 0
         self.bounce_timer = None
+
+    def reset(self):
+        self.event_time = self.__ms_time()
+        self.current_state = GPIO.input(self.number)
+
+        self.previous_time = self.event_time
+        self.previous_state = self.current_state
+
+        self.bounce_time = 0
+        self.bounce_timer = None
+
+    def debounce(self, change_time, new_state):
+        """
+        Decide if event (rise/fall) should be debounced.
+
+        What we really want is to debounce raising/falling events and gather length of the previous
+        state (eg. how long button was pressed).
+
+        Sequence of changes (ever 5ms) -> Expected events. (1 - Raise, F - Fall, _ - No change)
+        10101__ -> Raise at 0 ms
+        101_0__ -> Raise at 0 ms, Fall at 20ms
+        1010___ -> Raise at 0 ms, Fall at 15ms
+
+        Tricky part is there's not real guarantee that there cannot be two falling events in a row.
+
+        """
+
+        self.bounce_time = change_time                         # but record the time
+
+        if change_time - self.bounce_time > self.bounce_interval:  # If sufficient time passed we pass the event,
+            self.bounce_timer = None
+            return False
+        else:
+            if new_state != self.current_state:
+                if not self.bounce_timer:  # it's possible (although it shouldn't be) to get two falling events in a row
+                    self.bounce_timer = Timer(self.bounce_interval / 1000.0, self.event, [change_time, new_state])
+                    self.bounce_timer.start()
+            else:                              # We changed back into a previous state so cancel the trigger
+                if self.bounce_timer:
+                    self.bounce_timer.cancel()
+
+            return True
+
+    def event(self, change_time, new_state):
+        """
+        Processes event, including debouncing and measurement of previous state length.
+        """
+
+        if self.debounce(change_time, new_state):
+            return
+
+        self.previous_time = self.event_time
+        self.previous_state = self.current_state
+
+        self.event_time = change_time
+        self.current_state = new_state
+
+        state_duration = self.event_time - self.previous_time
+
+        if self.current_state == GPIO.HIGH:
+            if self.rising:
+                self.rising(change_time, state_duration)
+        else:
+            if self.falling:
+                self.falling(change_time, state_duration)
+
+        if self.changed:
+            self.changed(self.current_state, change_time, state_duration)
 
     @property
     def state(self):
@@ -63,51 +132,6 @@ class Rin(Rio):
 
     def edge(self, channel):
         self.event(self.__ms_time(), self.state)
-
-    def event(self, current_time, current_state):
-        """
-        Processes event.
-
-        What we really want is to debounce raising/falling events and gather length of the previous
-        state (eg. how long button was pressed). The problem seems to be how do we handle debouncing?
-        Ideally a very short connection/disconnection series should be for example: 10101111| (Rising)
-        so the first and last state are the same and next we can expect 01010000| (Falling)
-        [where | is a cutoff for debouncing].
-        But what if we get something like this: 1010111110|00000000
-        Obviously we want to do a Rising event, but do we also raise a Falling event?
-        If we don't then that would mean one Raising event gets followed by another Rising event which we don't
-        necessarily expect. Ideally we'd like to get alternating stream of events.
-        Keep it mind however that this is not a guarantee. It's possible to receive several HIGH signals in a anyway.
-        """
-        if current_time - self.bounce_time < self.bounce_interval:
-            self.bounce_time = current_time
-
-            # We block the event if it happened to fast after previous one. But if it last longer then bounce timer
-            # we trigger it. We pass the original time of event triggering.
-            if self.bounce_timer:
-                self.bounce_timer.cancel()
-            self.bounce_timer = Timer(self.bounce_interval, self.event, current_time, current_state)
-            self.bounce_timer.start()
-
-            return
-
-        self.previous_time = self.event_time
-        self.previous_state = self.current_state
-
-        self.event_time = current_time
-        self.current_state = current_state
-
-        state_duration = self.event_time - self.previous_time
-
-        if self.current_state == GPIO.HIGH:
-            if self.rising:
-                self.rising(current_time, state_duration)
-        else:
-            if self.falling:
-                self.falling(current_time, state_duration)
-
-        if self.changed:
-            self.changed(self.current_state, current_time, state_duration)
 
     def __ms_time(self):
         return round(time.time() * 1000)
@@ -184,14 +208,24 @@ class RioTest:
         self.pin = pins['pin']
         self.pout = pins['pout']
 
-        self.rin = Rin.get(self.pin)
-        self.rout = Rout.get(self.pout)
+        self.rin = None
+        self.rout = None
 
         self.rising_called = None
         self.falling_called = None
         self.changed_called = None
 
         self.call_stack = []
+
+    def high(self, sleep_ms=0):
+        self.rout.high()
+        if sleep_ms:
+            time.sleep(sleep_ms / 1000.0)
+
+    def low(self, sleep_ms=0):
+        self.rout.low()
+        if sleep_ms:
+            time.sleep(sleep_ms / 1000.0)
 
     @staticmethod
     def result(expected, actual):
@@ -203,7 +237,7 @@ class RioTest:
         if expected == actual:
             print ok, actual, end
         else:
-            print fail, actual, end, "Expected", exp, expected, end
+            print 'Got', fail, actual, end, "Expected", exp, expected, end
 
     def test_regular(self):
         rin = Rin.get(self.pin)
@@ -241,17 +275,12 @@ class RioTest:
         rout.low()
         self.result("LOW", rin.text_state)
 
-    def high(self, sleep_ms=0):
-        self.rout.high()
-        if sleep_ms:
-            time.sleep(sleep_ms / 1000.0)
-
-    def low(self, sleep_ms=0):
-        self.rout.low()
-        if sleep_ms:
-            time.sleep(sleep_ms / 1000.0)
+        Rio.cleanup()
 
     def test_callbacks(self):
+        self.rin = Rin.get(self.pin)
+        self.rout = Rout.get(self.pout)
+
         delay = self.minimal_change_duration
 
         print '\nStarting callback tests\n'
@@ -285,21 +314,50 @@ class RioTest:
 
         self.result(['Falling', 'Changed', 'Rising', 'Changed', 'Falling', 'Changed'], self.call_stack)
 
-    def test_debouncing(self):
-        delay = self.minimal_change_duration
+        Rio.cleanup()
 
-        self.rin.bounce_interval = 20  # ms
+    def test_debouncing(self):
+        self.rin = Rin.get(self.pin)
+        self.rout = Rout.get(self.pout)
 
         print '\nStarting debouncing tests\n'
 
-        print "Raise, Fall, Raise (%dms delay)" % delay,
+        self.rin.bounce_interval = 4 * self.minimal_change_duration - 1 # ms
+
+        self.rin.rising = self.rising
+        self.rin.falling = self.falling
+
+        self.bounce_sequence("10101______", ['Rising'])
+        self.bounce_sequence("01010______", ['Rising', 'Falling'], start='HIGH')
+
+        self.bounce_sequence('101_0______', ['Rising', 'Falling'])
+        self.bounce_sequence('1010_______', ['Rising', 'Falling'])
+
+        self.bounce_sequence('101_010____', ['Rising', 'Falling'])
+        self.bounce_sequence('1010___1___', ['Rising', 'Falling', 'Rising'])
+
+        Rio.cleanup()
+
+    def bounce_sequence(self, sequence, expected, delay=minimal_change_duration, start="LOW"):
+        print sequence, '->', expected
+
+        if start == "LOW":
+            self.low()
+        else:
+            self.high()
+
+        self.rin.reset()
         self.call_stack = []
 
-        self.high(delay)
-        self.low(delay)
-        self.high(delay)
+        for e in sequence:
+            if e == 'R' or e == '1':
+                self.high(delay)
+            elif e == 'L' or e == '0':
+                self.low(delay)
+            else:
+                time.sleep(delay / 1000.0)
 
-        self.result(['Rising', 'Changed'], self.call_stack)
+        self.result(expected, self.call_stack)
 
     def rising(self, current_time, state_duration):
         self.rising_called = {'current_time': current_time, 'state_duration': state_duration}
@@ -310,18 +368,20 @@ class RioTest:
         self.call_stack.append('Falling')
 
     def changed(self, current_state, current_time, state_duration):
-        self.changed_called = {'current_state': current_state, 'current_time': current_time, 'state_duration': state_duration}
+        self.changed_called = {'current_state': current_state, 'current_time': current_time,
+                               'state_duration': state_duration}
         self.call_stack.append('Changed')
 
 
 if __name__ == "__main__":
     Rio.init()
     tester = RioTest(pin=13, pout=11)
-    tester.test_regular()
-    tester.test_callbacks()
+
+    # tester.test_regular()
+    # tester.test_callbacks()
     tester.test_debouncing()
 
     print '\n\nWaiting one second for all tests to finish and timer to stop'
     time.sleep(1)
 
-    Rio.cleanup()
+    # Rio.cleanup() # we're cleaning up after each test now.
