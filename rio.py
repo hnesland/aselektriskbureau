@@ -45,7 +45,7 @@ class Rin(Rio):
         GPIO.setup(number, GPIO.IN)
         GPIO.add_event_detect(self.number, GPIO.BOTH, callback=self.edge)
 
-        self.event_time = self.__ms_time()
+        self.event_time = self.ms_time()
         self.current_state = self.state()
 
         self.previous_time = self.event_time
@@ -55,7 +55,7 @@ class Rin(Rio):
         self.bounce_timer = None
 
     def reset(self):
-        self.event_time = self.__ms_time()
+        self.event_time = self.ms_time()
         self.current_state = self.state()
 
         self.previous_time = self.event_time
@@ -65,7 +65,7 @@ class Rin(Rio):
         self.bounce_timer = None
 
     def edge(self, channel):
-        self.debounce(self.__ms_time(), self.state())
+        self.debounce(self.ms_time(), self.state())
 
     def debounce(self, change_time, new_state):
         """
@@ -85,12 +85,12 @@ class Rin(Rio):
 
         if not self.bounce_timer:
             if new_state != self.current_state:
-              self.bounce_timer = Timer(self.bounce_interval / 1000.0, self.event, [change_time, new_state])
-              self.bounce_timer.start()
+                self.bounce_timer = Timer(self.bounce_interval / 1000.0, self.event, [change_time, new_state])
+                self.bounce_timer.start()
         else:
             if new_state == self.current_state:
-              self.bounce_timer.cancel()
-              self.bounce_timer = None
+                self.bounce_timer.cancel()
+                self.bounce_timer = None
 
     def event(self, change_time, new_state):
         """
@@ -122,7 +122,7 @@ class Rin(Rio):
     def text_state(self):
         return "HIGH" if self.state() else "LOW"
 
-    def __ms_time(self):
+    def ms_time(self):
         return round(time.time() * 1000)
 
 
@@ -186,7 +186,7 @@ class RioTest:
          learn here: http://www.instructables.com/id/Choosing-The-Resistor-To-Use-With-LEDs/?ALLSTEPS
     """
 
-    minimal_change_duration = 5  # ms.
+    change_duration = 5  # ms.
 
     def __init__(self, **pins):
         """
@@ -204,29 +204,9 @@ class RioTest:
         self.falling_called = None
         self.changed_called = None
 
+        self.start_time = 0
+
         self.call_stack = []
-
-    def high(self, sleep_ms=0):
-        self.rout.high()
-        if sleep_ms:
-            time.sleep(sleep_ms / 1000.0)
-
-    def low(self, sleep_ms=0):
-        self.rout.low()
-        if sleep_ms:
-            time.sleep(sleep_ms / 1000.0)
-
-    @staticmethod
-    def result(expected, actual):
-        ok = '\033[92m'
-        fail = '\033[91m'
-        exp = '\033[93m'
-        end = '\033[0m'
-
-        if expected == actual:
-            print ok, actual, end
-        else:
-            print 'Got', fail, actual, end, "Expected", exp, expected, end
 
     def test_regular(self):
         rin = Rin.get(self.pin)
@@ -270,7 +250,7 @@ class RioTest:
         self.rin = Rin.get(self.pin)
         self.rout = Rout.get(self.pout)
 
-        delay = self.minimal_change_duration
+        delay = self.change_duration
 
         print '\nStarting callback tests\n'
 
@@ -311,7 +291,7 @@ class RioTest:
 
         print '\nStarting debouncing tests\n'
 
-        self.rin.bounce_interval = 4 * self.minimal_change_duration - 1 # ms
+        self.rin.bounce_interval = 4 * self.change_duration - 1  # ms
 
         self.rin.rising = self.rising
         self.rin.falling = self.falling
@@ -325,10 +305,62 @@ class RioTest:
         self.bounce_sequence('101_010____', [])
         self.bounce_sequence('1010__1____', ['Rising'])
 
+        self.rin.rising = None
+        self.rin.falling = None
+        self.rin.changed = self.changed
+
+        self.bounce_sequence('101____', ['Changed'])
+        self.result(1, self.changed_called['new_state'], 'State change')
+
+        overhead = 2  # ms
+
+        print "Testing timing"
+
+        def period():
+            return int(round(self.changed_called['state_duration'] / (self.change_duration + overhead))) + 1
+
+        self.bounce_sequence('1____', ['Changed'])
+        self.result(1, period(), 'Period 1')
+        self.bounce_sequence('01____', ['Changed'])
+        self.result(2, period(), 'Period 2')
+        self.bounce_sequence('101____', ['Changed'])
+        self.result(3, period(), 'Period 3')
+        self.bounce_sequence('10101____', ['Changed'])
+        self.result(5, period(), 'Period 5')
+
+        self.bounce_sequence('101____', ['Changed'])
+        self.result(1, self.changed_called['new_state'], 'State')
+
         Rio.cleanup()
 
-    def bounce_sequence(self, sequence, expected, delay=minimal_change_duration, start="LOW"):
-        print sequence, '->', expected
+    # Test callbacks
+
+    def rising(self, event_time, state_duration):
+        self.rising_called = {'event_time': event_time - self.start_time, 'state_duration': state_duration}
+        self.call_stack.append('Rising')
+
+    def falling(self, event_time, state_duration):
+        self.falling_called = {'event_time': event_time - self.start_time, 'state_duration': state_duration}
+        self.call_stack.append('Falling')
+
+    def changed(self, new_state, event_time, state_duration):
+        self.changed_called = {'new_state': new_state, 'event_time': event_time - self.start_time, 'state_duration': state_duration}
+        self.call_stack.append('Changed')
+
+    # Helpers.
+
+    def high(self, sleep_ms=0):
+        self.rout.high()
+        if sleep_ms:
+            time.sleep(sleep_ms / 1000.0)
+
+    def low(self, sleep_ms=0):
+        self.rout.low()
+        if sleep_ms:
+            time.sleep(sleep_ms / 1000.0)
+
+    def bounce_sequence(self, sequence, expected, delay=change_duration, start="LOW"):
+        print sequence, '->', expected,
 
         if start == "LOW":
             self.low()
@@ -337,6 +369,7 @@ class RioTest:
 
         self.rin.reset()
         self.call_stack = []
+        self.start_time = self.rin.ms_time()
 
         for e in sequence:
             if e == 'R' or e == '1':
@@ -348,18 +381,17 @@ class RioTest:
 
         self.result(expected, self.call_stack)
 
-    def rising(self, current_time, state_duration):
-        self.rising_called = {'current_time': current_time, 'state_duration': state_duration}
-        self.call_stack.append('Rising')
+    @staticmethod
+    def result(expected, actual, comment=''):
+        ok = '\033[92m'
+        fail = '\033[91m'
+        exp = '\033[93m'
+        end = '\033[0m'
 
-    def falling(self, current_time, state_duration):
-        self.falling_called = {'current_time': current_time, 'state_duration': state_duration}
-        self.call_stack.append('Falling')
-
-    def changed(self, current_state, current_time, state_duration):
-        self.changed_called = {'current_state': current_state, 'current_time': current_time,
-                               'state_duration': state_duration}
-        self.call_stack.append('Changed')
+        if expected == actual:
+            print comment, ok, actual, end
+        else:
+            print comment, 'Got', fail, actual, end, "Expected", exp, expected, end
 
 
 if __name__ == "__main__":
