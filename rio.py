@@ -46,7 +46,7 @@ class Rin(Rio):
         GPIO.add_event_detect(self.number, GPIO.BOTH, callback=self.edge)
 
         self.event_time = self.__ms_time()
-        self.current_state = GPIO.input(self.number)
+        self.current_state = self.state()
 
         self.previous_time = self.event_time
         self.previous_state = self.current_state
@@ -56,13 +56,16 @@ class Rin(Rio):
 
     def reset(self):
         self.event_time = self.__ms_time()
-        self.current_state = GPIO.input(self.number)
+        self.current_state = self.state()
 
         self.previous_time = self.event_time
         self.previous_state = self.current_state
 
         self.bounce_time = 0
         self.bounce_timer = None
+
+    def edge(self, channel):
+        self.debounce(self.__ms_time(), self.state())
 
     def debounce(self, change_time, new_state):
         """
@@ -75,34 +78,24 @@ class Rin(Rio):
         10101__ -> Raise at 0 ms
         101_0__ -> Raise at 0 ms, Fall at 20ms
         1010___ -> Raise at 0 ms, Fall at 15ms
+        All should get debounced.
 
         Tricky part is there's not real guarantee that there cannot be two falling events in a row.
-
         """
 
-        self.bounce_time = change_time                         # but record the time
-
-        if change_time - self.bounce_time > self.bounce_interval:  # If sufficient time passed we pass the event,
-            self.bounce_timer = None
-            return False
-        else:
+        if not self.bounce_timer:
             if new_state != self.current_state:
-                if not self.bounce_timer:  # it's possible (although it shouldn't be) to get two falling events in a row
-                    self.bounce_timer = Timer(self.bounce_interval / 1000.0, self.event, [change_time, new_state])
-                    self.bounce_timer.start()
-            else:                              # We changed back into a previous state so cancel the trigger
-                if self.bounce_timer:
-                    self.bounce_timer.cancel()
-
-            return True
+              self.bounce_timer = Timer(self.bounce_interval / 1000.0, self.event, [change_time, new_state])
+              self.bounce_timer.start()
+        else:
+            if new_state == self.current_state:
+              self.bounce_timer.cancel()
+              self.bounce_timer = None
 
     def event(self, change_time, new_state):
         """
         Processes event, including debouncing and measurement of previous state length.
         """
-
-        if self.debounce(change_time, new_state):
-            return
 
         self.previous_time = self.event_time
         self.previous_state = self.current_state
@@ -122,16 +115,12 @@ class Rin(Rio):
         if self.changed:
             self.changed(self.current_state, change_time, state_duration)
 
-    @property
     def state(self):
         return GPIO.input(self.number)
 
     @property
     def text_state(self):
-        return "HIGH" if self.state else "LOW"
-
-    def edge(self, channel):
-        self.event(self.__ms_time(), self.state)
+        return "HIGH" if self.state() else "LOW"
 
     def __ms_time(self):
         return round(time.time() * 1000)
@@ -328,13 +317,13 @@ class RioTest:
         self.rin.falling = self.falling
 
         self.bounce_sequence("10101______", ['Rising'])
-        self.bounce_sequence("01010______", ['Rising', 'Falling'], start='HIGH')
+        self.bounce_sequence("01010______", ['Falling'], start='HIGH')
 
-        self.bounce_sequence('101_0______', ['Rising', 'Falling'])
-        self.bounce_sequence('1010_______', ['Rising', 'Falling'])
+        self.bounce_sequence('101_0______', [])
+        self.bounce_sequence('1010_______', [])
 
-        self.bounce_sequence('101_010____', ['Rising', 'Falling'])
-        self.bounce_sequence('1010___1___', ['Rising', 'Falling', 'Rising'])
+        self.bounce_sequence('101_010____', [])
+        self.bounce_sequence('1010__1____', ['Rising'])
 
         Rio.cleanup()
 
