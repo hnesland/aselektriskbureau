@@ -1,22 +1,22 @@
 from rio import *
 
 import atexit
-from collections import OrderedDict
-import collections
+
 
 # Module for testing the rotary dial timing, debouncing, etc.
 #
 # PINS
 # IN  | OUT | Color  | Role     | Initial state
-# 15  | 22  | Blue   | Rotation | Low
-# 16  | 23  | Green  | Pulse    | High
+# 15  | 22  | Blue   | Rotation | High
+# 16  | 23  | Green  | Pulse    | Low
 # 18  | 24  | Red
 
 
 class Counter:
-    START = "Rotating START"
-    FINISH = "Rotating FINISH"
-    PULSE = "Pulse %d"
+    """
+    Standalone module used for debugging rotary dial, choosing debouncing value, etc.
+    Configured independently.
+    """
 
     pin_rotating = 15
     pin_pulse = 16
@@ -119,4 +119,4 @@ c = Counter()
 atexit.register(Rio.cleanup)
 
 while True:
-  time.sleep(1)
+    time.sleep(1)
