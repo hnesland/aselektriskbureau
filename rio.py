@@ -1,8 +1,26 @@
 # Object Oriented GPIO manipulation for Raspberry Pi
+import random
 
 import RPi.GPIO as GPIO
-from threading import Timer, Lock
+from threading import Timer, Lock, RLock
 import time
+import functools
+
+
+def synchronized(wrapped):
+    """ Synchronization decorator. """
+
+    meta_lock = Lock()
+
+    @functools.wraps(wrapped)
+    def _wrapper(self, *args, **kwargs):
+        with meta_lock:
+            lock = vars(self).setdefault("__lock_"+wrapped.__name__, RLock())
+
+        with lock:
+            return wrapped(self, *args, **kwargs)
+
+    return _wrapper
 
 
 class Rio:
@@ -15,6 +33,9 @@ class Rio:
 
     @classmethod
     def cleanup(cls):
+        for number, rin in cls.pins.iteritems():
+            rin.destroy()
+
         cls.pins = {}
         GPIO.cleanup()
 
@@ -34,13 +55,13 @@ class Rio:
 
 
 class Rin(Rio):
-    def __init__(self, number):
+    def __init__(self, number, bounce_interval=0):
         self.falling = None
         self.rising = None
         self.changed = None
 
         self.number = number
-        self.bounce_interval = 0  # ms
+        self.bounce_interval = bounce_interval  # ms
 
         GPIO.setup(number, GPIO.IN)
         GPIO.add_event_detect(self.number, GPIO.BOTH, callback=self.edge)
@@ -67,6 +88,7 @@ class Rin(Rio):
     def edge(self, channel):
         self.debounce(self.ms_time(), self.state())
 
+    @synchronized
     def debounce(self, change_time, new_state):
         """
         Decide if event (rise/fall) should be debounced.
@@ -80,8 +102,34 @@ class Rin(Rio):
         1010___ -> Raise at 0 ms, Fall at 15ms
         All should get debounced.
 
-        Tricky part is there's not real guarantee that there cannot be two falling events in a row.
+        Tricky part is there's not real guarantee that there cannot be two falling events in a row. This is a dump from
+        a real test:
+
+        -----------------------------------------------------------------------------------------------
+        LP |          Trigger |  Time [ms] | Length[ms] | Count | State
+         0 |      Pulse - LOW |      0[ms] |      0[ms] |     - | -
+         0 |  Rotation - HIGH |      0[ms] |      0[ms] |     - | -
+         1 |  Rotation - HIGH |      0[ms] |  10958[ms] |     - | -
+         2 |   Rotation - LOW |     74[ms] |     74[ms] |     - | -
+         3 |   Rotation - LOW |     76[ms] |      2[ms] |     - | -
+         4 |   Rotation - LOW |     82[ms] |      6[ms] |     - | -
+         5 |  Rotation - HIGH |    118[ms] |     36[ms] |     - | -
+         6 |   Rotation - LOW |    185[ms] |     67[ms] |     - | -
+         7 |   Rotation - LOW |    186[ms] |      1[ms] |     - | -
+         8 |   Rotation - LOW |    198[ms] |     12[ms] |     - | -
+         9 |  Rotation - HIGH |    228[ms] |     30[ms] |     - | -
+        10 |  Rotation - HIGH |    229[ms] |      1[ms] |     - | -
+        11 |   Rotation - LOW |    294[ms] |     65[ms] |     - | -
+        12 |   Rotation - LOW |    296[ms] |      2[ms] |     - | -
+
+        Additionally even with debuncing turned on, sometimes duplicate events will come through with length < debounce
+        time. There must be several bugs related to concurrency in that library. For that reason we write our own
+        debouncing.
         """
+
+        if self.bounce_interval == 0:
+            self.event(change_time, new_state)
+            return False
 
         if not self.bounce_timer:
             if new_state != self.current_state:
@@ -92,10 +140,13 @@ class Rin(Rio):
                 self.bounce_timer.cancel()
                 self.bounce_timer = None
 
+    @synchronized
     def event(self, change_time, new_state):
         """
         Processes event, including debouncing and measurement of previous state length.
         """
+
+        self.bounce_timer = None
 
         self.previous_time = self.event_time
         self.previous_state = self.current_state
@@ -113,7 +164,7 @@ class Rin(Rio):
                 self.falling(change_time, state_duration)
 
         if self.changed:
-            self.changed(self.current_state, change_time, state_duration)
+            self.changed(new_state, change_time, state_duration)
 
     def state(self):
         return GPIO.input(self.number)
@@ -125,12 +176,19 @@ class Rin(Rio):
     def ms_time(self):
         return round(time.time() * 1000)
 
+    def destroy(self):
+        GPIO.remove_event_detect(self.number)
+
 
 class Rout(Rio):
     def __init__(self, number):
         self.number = number
         self.state = GPIO.LOW
         GPIO.setup(number, GPIO.OUT)
+
+    def set(self, new_state):
+        self.state = new_state
+        GPIO.output(self.number, self.state)
 
     def high(self, timeout=None):
         self.state = GPIO.HIGH
@@ -153,6 +211,9 @@ class Rout(Rio):
         GPIO.output(self.number, self.state)
         if timeout:
             Timer(timeout, self.flip).start()
+
+    def destroy(self):
+        pass
 
 
 class RioTest:
@@ -208,51 +269,62 @@ class RioTest:
 
         self.call_stack = []
 
-    def test_regular(self):
-        rin = Rin.get(self.pin)
-        rout = Rout.get(self.pout)
+    def test(self, method):
+        print ("----------------------------------------------------------------------------------------------------")
 
-        print 'HIGH for 1 second (check if led is on).'
-        rout.high()
-        time.sleep(1)
+        print 'Starting %s tests.\n' % method
+        Rio.init()
 
-        print 'HIGH (10ms delay) ...',
-        rout.high()
-        time.sleep(0.01)
-        self.result("HIGH", rin.text_state)
-
-        print 'LOW  (10ms delay) ...',
-        rout.low()
-        time.sleep(0.01)
-        self.result("LOW", rin.text_state)
-
-        print 'HIGH (1ms delay) ....',
-        rout.high()
-        time.sleep(0.001)
-        self.result("HIGH", rin.text_state)
-
-        print 'LOW  (1ms delay) ....',
-        rout.low()
-        time.sleep(0.001)
-        self.result("LOW", rin.text_state)
-
-        print 'HIGH (no delay) .....',
-        rout.high()
-        self.result("HIGH", rin.text_state)
-
-        print 'LOW  (no delay) .....',
-        rout.low()
-        self.result("LOW", rin.text_state)
-
-        Rio.cleanup()
-
-    def test_callbacks(self):
         self.rin = Rin.get(self.pin)
         self.rout = Rout.get(self.pout)
 
+        self.start_time = 0
+        self.call_stack = []
+
+        getattr(self, 'test_'+method)()
+
+        print '\nFinishing %s tests.\n' % method
+        Rio.cleanup()
+
+    def test_regular(self):
+        print 'HIGH for 1 second (check if led is on).'
+        self.rout.high()
+        time.sleep(1)
+
+        print 'HIGH (10ms delay) ...',
+        self.rout.high()
+        time.sleep(0.01)
+        self.result("HIGH", self.rin.text_state)
+
+        print 'LOW  (10ms delay) ...',
+        self.rout.low()
+        time.sleep(0.01)
+        self.result("LOW", self.rin.text_state)
+
+        print 'HIGH (1ms delay) ....',
+        self.rout.high()
+        time.sleep(0.001)
+        self.result("HIGH", self.rin.text_state)
+
+        print 'LOW  (1ms delay) ....',
+        self.rout.low()
+        time.sleep(0.001)
+        self.result("LOW", self.rin.text_state)
+
+        print 'HIGH (no delay) .....',
+        self.rout.high()
+        self.result("HIGH", self.rin.text_state)
+
+        print 'LOW  (no delay) .....',
+        self.rout.low()
+        self.result("LOW", self.rin.text_state)
+
+    def test_callbacks(self):
         delay = self.change_duration
 
         print '\nStarting callback tests\n'
+
+        self.low(delay)
 
         self.rin.changed = self.changed
         self.rin.rising = self.rising
@@ -283,55 +355,49 @@ class RioTest:
 
         self.result(['Falling', 'Changed', 'Rising', 'Changed', 'Falling', 'Changed'], self.call_stack)
 
-        Rio.cleanup()
-
     def test_debouncing(self):
-        self.rin = Rin.get(self.pin)
-        self.rout = Rout.get(self.pout)
-
         print '\nStarting debouncing tests\n'
-
-        self.rin.bounce_interval = 4 * self.change_duration - 1  # ms
 
         self.rin.rising = self.rising
         self.rin.falling = self.falling
 
-        self.bounce_sequence("10101______", ['Rising'])
-        self.bounce_sequence("01010______", ['Falling'], start='HIGH')
+        self.debounce_sequence("10101__", ['Rising'])
+        self.debounce_sequence("01010__", ['Falling'], start='HIGH')
 
-        self.bounce_sequence('101_0______', [])
-        self.bounce_sequence('1010_______', [])
+        self.debounce_sequence('101_0__', [])
+        self.debounce_sequence('1010___', [])
 
-        self.bounce_sequence('101_010____', [])
-        self.bounce_sequence('1010__1____', ['Rising'])
-
-        self.rin.rising = None
-        self.rin.falling = None
-        self.rin.changed = self.changed
-
-        self.bounce_sequence('101____', ['Changed'])
-        self.result(1, self.changed_called['new_state'], 'State change')
+        self.debounce_sequence('101_010__', [])
+        self.debounce_sequence('1010__1__', ['Rising'])
 
         overhead = 2  # ms
 
         print "Testing timing"
 
         def period():
-            return int(round(self.changed_called['state_duration'] / (self.change_duration + overhead))) + 1
+            if self.rising_called is not None:
+              return int(round(self.rising_called['state_duration'] / (self.change_duration + overhead))) + 1
 
-        self.bounce_sequence('1____', ['Changed'])
+        self.debounce_sequence('1__', ['Rising'])
         self.result(1, period(), 'Period 1')
-        self.bounce_sequence('01____', ['Changed'])
+
+        self.debounce_sequence('01__', ['Rising'])
         self.result(2, period(), 'Period 2')
-        self.bounce_sequence('101____', ['Changed'])
+
+        self.debounce_sequence('101__', ['Rising'])
         self.result(3, period(), 'Period 3')
-        self.bounce_sequence('10101____', ['Changed'])
+
+        self.debounce_sequence('10101__', ['Rising'])
         self.result(5, period(), 'Period 5')
 
-        self.bounce_sequence('101____', ['Changed'])
-        self.result(1, self.changed_called['new_state'], 'State')
+        self.debounce_sequence('101__', ['Rising'])
 
-        Rio.cleanup()
+        self.rin.rising = None
+        self.rin.falling = None
+        self.rin.changed = self.changed
+
+        self.debounce_sequence('101__', ['Changed'])
+        self.result(1, self.changed_called['new_state'], 'State change')
 
     # Test callbacks
 
@@ -344,7 +410,8 @@ class RioTest:
         self.call_stack.append('Falling')
 
     def changed(self, new_state, event_time, state_duration):
-        self.changed_called = {'new_state': new_state, 'event_time': event_time - self.start_time, 'state_duration': state_duration}
+        self.changed_called = {'new_state': new_state, 'event_time': event_time - self.start_time,
+                               'state_duration': state_duration}
         self.call_stack.append('Changed')
 
     # Helpers.
@@ -359,16 +426,17 @@ class RioTest:
         if sleep_ms:
             time.sleep(sleep_ms / 1000.0)
 
-    def bounce_sequence(self, sequence, expected, delay=change_duration, start="LOW"):
+    def bounce_sequence(self, sequence, expected, delay=change_duration, start="LOW", wait_after=0):
         print sequence, '->', expected,
 
         if start == "LOW":
-            self.low()
-        else:
-            self.high()
+            self.low(delay)
+        elif start == "HIGH":
+            self.high(delay)
 
         self.rin.reset()
         self.call_stack = []
+        self.changed_called = self.rising_called = self.falling_called = None
         self.start_time = self.rin.ms_time()
 
         for e in sequence:
@@ -379,7 +447,20 @@ class RioTest:
             else:
                 time.sleep(delay / 1000.0)
 
+        if wait_after > 0:
+            time.sleep(wait_after / 1000.0)
+
         self.result(expected, self.call_stack)
+
+    def debounce_sequence(self, sequence, expected, delay=change_duration, start="LOW"):
+        if start == "LOW":
+            self.low(delay)
+        elif start == "HIGH":
+            self.high(delay)
+
+        self.rin.bounce_interval = 4 * self.change_duration - 1  # ms
+        self.bounce_sequence(sequence, expected, delay, start=None, wait_after=self.rin.bounce_interval)
+        self.rin.bounce_interval = 0
 
     @staticmethod
     def result(expected, actual, comment=''):
@@ -395,12 +476,11 @@ class RioTest:
 
 
 if __name__ == "__main__":
-    Rio.init()
     tester = RioTest(pin=13, pout=11)
 
-    # tester.test_regular()
-    # tester.test_callbacks()
-    tester.test_debouncing()
+    tester.test("regular")
+    tester.test("callbacks")
+    tester.test("debouncing")
 
     print '\n\nWaiting one second for all tests to finish and timer to stop'
     time.sleep(1)
