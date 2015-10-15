@@ -165,13 +165,13 @@ Installing Linphone on Raspberry Pi based on https://wiki.linphone.org/wiki/inde
 
 ---
 
-# Hardware setup
+# Work log.
 
 First of all I had to figure out how the dial works.
 
 I set up a breadboard and connected it to Raspberry PI. The breadboard and 2 other connecting boards I've used came from failed Kickstarter project I've contributed to (I got _some_ of the parts I've paid for). 
 I hoped the'll be useful here as they allowed me to easilly connect Raspberry PI to a breadboard using cable. It turned out not to be as easy. 
-First of all boards were initialy made for arduino pins, second, while idea behind those was quite nice, the implementation was shity, mislabeled pins, shorted traces, etc.
+First of all boards were initially made for arduino pins, second, while idea behind those was quite nice, the implementation was shity, mislabeled pins, shorted traces, etc.
 
 So after figuring out which pin on cable connects to which pin on breadboard I've come to the conclusion that some pins on breadboard were shorted, which could unfortunately fry RPi if I connected it to the breadboard. Luckilly I caught it in time and severed few traces on PCB which resulted in Pin 14 on BB to be connected to Pin 7 on RPi, and pin 14 to be not connected at all. But besides that everything seemed to work fine.
 
@@ -190,10 +190,17 @@ First I've tried counting impulses all the time and then just displaying result 
 That didn't exactly work well, and exprimenting with debouncing did not yield expected results, so I threw out all the debouncing and instead created a counter class which counts all triggers and after half a second since last one prints the timing table. 
 See [counter.py @ 2079f98](https://github.com/Szpeja/RotaryPi/blob/2079f98/counter.py)
 
-After reviewing timing tables tehre clearly needs to be some debouncing done. I've started with value of 10ms. Unfortunately itturned out the GPIO library for Raspberry Pi is buggy and doesn't handle debouncing that well + aparently detecting edges does not work correctly either whebn set to _FALLING_ or _RISING_ and only _BOTH_ seems to work. This means I'll have to implement the whole logic on my side just like it was done by original author.
+After reviewing timing tables tehre clearly needs to be some debouncing done. I've started with value of 10ms. Unfortunately it turned out the GPIO library for Raspberry Pi is buggy and doesn't handle debouncing that well + aparently detecting edges does not work correctly either whebn set to _FALLING_ or _RISING_ and only _BOTH_ seems to work. This means I'll have to implement the whole logic on my side just like it was done by original author.
 
 After carefully inspecting the hardware rotor I've also found why sometimes extra pulses were emmited. The flywheel sometimes backed few milimeters causing old connection to disjoint and emit a very short pulse.
 
+Next I spent several hours learnign more python and trying to implement sane debouncing to work around concurency problems in RPi.GPIO module.
+After I was reasonably sure my code is correct, and I've discovered all the bugs/problems in the RPi.GPIO I started working on a rotary dial again.
+It turned out that one of the stoppers that should have stopped a flywheel from backing got worn out and after bending it back into shape, I manged to get consistent results with the rotary dial.
+
+It's quite interesting/frustrating how combination of two _bugs_ one in software library and one in hardware itself - both trivial to solve on their own - created a problem that took me several hours to figure out.
+
+At this point I have a working IO library ( Rio :) ), with working and testable debouncing, working counter script, and I'm ready to move forward. The revision is 59ea9f1a60d18da8fe8ce6a17f3f5a125ff85902
 
 ---
 
