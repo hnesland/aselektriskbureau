@@ -4,6 +4,9 @@ import atexit
 from collections import OrderedDict
 import collections
 
+# Module for testing the rotary dial timing, debouncing, etc.
+#
+# PINS
 # IN  | OUT | Color  | Role     | Initial state
 # 15  | 22  | Blue   | Rotation | Low
 # 16  | 23  | Green  | Pulse    | High
