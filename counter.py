@@ -1,58 +1,115 @@
-import RPi.GPIO as GPIO
 from rio import *
 
 import atexit
 from collections import OrderedDict
 import collections
 
-# IN  | OUT | Color
-# 15  | 22  | Blue
-# 16  | 23  | Green
+# IN  | OUT | Color  | Role     | Initial state
+# 15  | 22  | Blue   | Rotation | Low
+# 16  | 23  | Green  | Pulse    | High
 # 18  | 24  | Red
+
 
 class Counter:
     START = "Rotating START"
     FINISH = "Rotating FINISH"
     PULSE = "Pulse %d"
 
-    pin_rotating = 16
-    pin_pulse = 18
+    pin_rotating = 15
+    pin_pulse = 16
 
-    pout_rotating = 23
-    pout_pulse = 24
+    pout_rotating = 22
+    pout_pulse = 23
 
-    bounce_time = 30  # ms
-    return_threshold = 250  # ms
+    bounce_time = 10  # ms
+    threshold = 100  # ms
 
-    rotations = 0
+    events = 0
 
     def __init__(self):
         Rio.init(GPIO.BOARD)
 
-        self.rotation = Rin(self.pin_rotating)
-        self.pulse = Rin(self.pin_pulse)
+        b = 25
 
-        self.rotation.changed(self.state_changed)
-        self.rotations = 0
+        self.rotation = Rin(self.pin_rotating, bounce_interval=b)
+        self.pulse = Rin(self.pin_pulse, bounce_interval=b)
+
+        self.rotation_led = Rout(self.pout_rotating)
+        self.pulse_led = Rout(self.pout_pulse)
+
+        self.rotation_led.set(self.rotation.state())
+        self.pulse_led.set(self.pulse.state())
+
+        self.rotation.changed = self.rotation_changed
+        self.pulse.changed = self.pulse_changed
+
+        self.events = 0
         self.events_start = None
+        self.events_timer = None
 
-    def state_changed(self, current_state, event_time, previous_state_duration):
-        self.rotations += 1
+        self.timer_lock = Lock()
 
-        if not self.events_start:
-            self.events_start = time.time() * 1000
+        self.pulses = 0
 
-            print "\n-----------------------------------------------------------------------------------------------"
-            print "%2s | %16s | %6s[ms] | %6s[ms] | %5s | %s " % ('LP', 'Trigger', 'Abs. ', 'Length', 'Count', 'State')
+        self.pulse_rest_state = self.pulse.text_state
+        self.rotation_rest_state = self.rotation.text_state
 
-        print "%2s | %16s | %6s[ms] | %6s[ms] | %5s | %s " % (
-            self.rotations,
-            'Rotation + %s' % current_state,
-            event_time - self.events_start,
-            previous_state_duration,
-            '-',
-            '-'
-        )
+        self.restart()
+
+    def restart(self):
+        print "\nPULSES: %d\n" % self.pulses
+
+        self.events_start = None
+        self.events_timer = None
+
+        self.pulses = 0
+
+        self.pulse_rest_state = self.pulse.text_state
+        self.rotation_rest_state = self.rotation.text_state
+
+    def rotation_changed(self, new_state, event_time, previous_state_duration):
+        self.rotation_led.set(new_state)
+        self.state_changed("Rotation", new_state, event_time, previous_state_duration)
+
+    def pulse_changed(self, new_state, event_time, previous_state_duration):
+        if new_state == 1:
+            self.pulses += 1
+        self.pulse_led.set(new_state)
+        self.state_changed("Pulse", new_state, event_time, previous_state_duration)
+
+    def state_changed(self, pin_name, new_state, event_time, previous_state_duration):
+        try:
+            self.events += 1
+
+            self.timer_lock.acquire()
+
+            if not self.events_start:
+                self.events_start = event_time
+                self.events = 1
+
+                print "\n----------------------------------------------------------------------------------------------"
+                print "%2s | %16s | %5s | %4s[ms] | %4s[ms] | %8s" % ('LP', 'Trigger', 'State', 'Time', 'Len', 'Pulses')
+
+                print "%2d | %16s | %5s | %8d | %8d | %8d" % (0, 'Pulse', self.pulse_rest_state, 0, 0, 0)
+                print "%2d | %16s | %5s | %8d | %8d | %8d" % (0, 'Rotation', self.rotation_rest_state, 0, 0, 0)
+
+            text_state = "HIGH" if new_state else "LOW"
+            print "%2d | %16s | %5s | %8d | %8d | %8d " % (
+                self.events,
+                pin_name,
+                text_state,
+                int(event_time - self.events_start),
+                previous_state_duration,
+                self.pulses
+            )
+
+            if self.events_timer:
+                self.events_timer.cancel()
+            self.events_timer = Timer(2, self.restart)
+            self.events_timer.start()
+        finally:
+            self.timer_lock.release()
+
 
 c = Counter()
 
