@@ -120,11 +120,11 @@ At this point I have a working IO library ( Rio :) ), with working and testable 
 
 * Modify to allow multiple SIP accounts with rotary-control and dialtone feedback.
 
-* Breakout ringtone to support using high voltage bells (include Open Hardware circuit diagram.)
+* ~~Breakout ringtone to support using high voltage bells (include Open Hardware circuit diagram.)~~ I'd still like to do this, but the phone I'm using turns out to just have fake bells and a speaker on the back, so I won't be implementing it for this build.
 
 * Hardware filter for pulses to simplify code?
 
-* Simple baseboard for Pi and audio card.
+* Simple baseboard for Pi and audio card, with any necessary amplification implemented cleanly.
 
 ---------------------------------------------------------------------
 
