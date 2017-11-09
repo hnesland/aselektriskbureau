@@ -4,26 +4,27 @@ import alsaaudio
 import wave
 
 class Ring:
-"""
-Superclass to support both mechanical ringers and virtual ringers. Should
-handle all the stuff about 'Should I ring', and interfacing with the daemon.
+    """
+    Superclass to support both mechanical ringers and virtual ringers. Should
+    handle all the stuff about 'Should I ring', and interfacing with the
+    daemon.
 
-Subclasses should then implement the start/continue/stop ringing functions for
-their specific hardware implementations.
-"""
+    Subclasses should then implement the start/continue/stop ringing functions
+    for their specific hardware implementations.
+    """
 
 class Ringer(Ring):
-"""
-Stub class to implement software control for a hardware ringer, like the bells
-of an early manual or automatic telephone from the first half of the 20th
-century.
-"""
+    """
+    Stub class to implement software control for a hardware ringer, like the
+    bells of an early manual or automatic telephone from the first half of the
+    20th century.
+    """
 
 class Ringtone(Ring):
-"""
-Class to implement a software ringer that outputs over ALSA. Should get the
-ALSA device name from config.
-"""
+    """
+    Class to implement a software ringer that outputs over ALSA. Should get the
+    ALSA device name from config.
+    """
     shouldring = 0
     ringtone = None
     ringfile = None
@@ -69,6 +70,7 @@ ALSA device name from config.
     def playhandset(self):
         print "Starting dialtone"
         wv = wave.open(self.handsetfile)
+        # TODO: Get this from config.
         device = alsaaudio.PCM(card="plug:external")
         #device.setchannels(wv.getnchannels())
         #device.setrate(wv.getframerate())
@@ -84,6 +86,7 @@ ALSA device name from config.
 
     def playfile(self, file):
         wv = wave.open(file)
+        # TODO: Get from config, but should NOT be Pulseaudio.
         self.device = alsaaudio.PCM(card="pulse")
         self.device.setchannels(wv.getnchannels())
         self.device.setrate(wv.getframerate())

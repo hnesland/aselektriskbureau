@@ -1,0 +1,26 @@
+--- # Sample configuration file for 1910calleditwantsitsphoneback
+hardware:
+  hardwarering: False
+  dialermode: 'Astral'
+
+soundfiles:
+  startup: 'startup1.wav'
+  shutdown: 'shutdown1.wav'
+  ringtone: 'aselektriskbureau.wav'
+  busytone: 'Old_North_American_busy_signal.wav'
+  timeout: 'roh.wav'
+  dialtone: 'dialtone.wav'
+
+sip:
+  username: 'sip_username'
+  password: 'sip_password'
+  hostname: 'sip.example.com'
+  port: 5060
+
+devices:
+  ringer: 'hw0,0'
+  earpiece: 'hw1,0'
+  mouthpiece: 'hw1,0'
+
+diallingtimeout: 2
+...
