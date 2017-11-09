@@ -3,7 +3,27 @@ import time
 import alsaaudio
 import wave
 
-class Ringtone:
+class Ring:
+"""
+Superclass to support both mechanical ringers and virtual ringers. Should
+handle all the stuff about 'Should I ring', and interfacing with the daemon.
+
+Subclasses should then implement the start/continue/stop ringing functions for
+their specific hardware implementations.
+"""
+
+class Ringer(Ring):
+"""
+Stub class to implement software control for a hardware ringer, like the bells
+of an early manual or automatic telephone from the first half of the 20th
+century.
+"""
+
+class Ringtone(Ring):
+"""
+Class to implement a software ringer that outputs over ALSA. Should get the
+ALSA device name from config.
+"""
     shouldring = 0
     ringtone = None
     ringfile = None

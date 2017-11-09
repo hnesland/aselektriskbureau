@@ -9,7 +9,21 @@ from threading import Timer
 import time
 
 class RotaryDial:
-    
+"""
+Superclass to allow disambiguation between different implementations of dialer
+hardware from different phone conversion projects. 
+"""
+
+class Astral(RotaryDial):
+"""
+Subclass of RotaryDial to support the dialer in phones from the late period
+of Astral PLC.
+"""
+
+class RotaryDialASEB(RotaryDial):
+"""
+Subclass of RotaryDial to support the dialer in the AS Elektrisk Bureau phone.
+"""
     # We'll be reading BCM GPIO 4 (pin 7 on board)
     pin_rotary = 4
 

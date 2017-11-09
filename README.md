@@ -30,13 +30,22 @@ For more information on the build, see http://imgur.com/a/HECDL/.
  
 ### Extras
 
-* Custom board to drive hardware bells.
+* Custom board to drive hardware bells, or custom power amp and speaker for
+playing simulated bell tones. (Uses BCM DAC)
 
 ---
 
 ## Raspberry Pi Setup
 
 Main modifications: overlays for gadget ethernet mode (Pi 0W only), and the Fe-Pi.
+
+    # In /boot/config.txt
+    dtoverlay=fe-pi-audio # enable Fe-Pi
+    dtoverlay=i2s-mmap # enable i2s audio support for Fe-Pi
+    dtoverlay=dwc2 #enable upstream USB controller driver. Slow, but OTG works.
+    
+    # In /boot/cmdline.txt
+    # After the rootwait command, add modules-load=dwc2,g_ether
 
 Avahi and SSH-Server should be running and configured so that admin/user can conduct headless network configuration.
 
