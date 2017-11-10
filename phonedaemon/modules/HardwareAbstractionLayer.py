@@ -10,7 +10,7 @@ import time
 from threading import Timer
 import RPi.GPIO as GPIO
 
-class RotaryDial(object):
+class HardwareAbstractionLayer(object):
     """
     Superclass to allow disambiguation between different implementations of
     dialer hardware from different phone conversion projects.
@@ -133,13 +133,13 @@ class RotaryDial(object):
             time.sleep(1)
 
 
-class RotaryDialAstral(RotaryDial):
+class AstralHAL(HardwareAbstractionLayer):
     """
-    Subclass of RotaryDial to support the dialer in phones from the late period
-    of Astral PLC.
+    Subclass of HardwareAbstractionLayer to support the dialer in phones from
+    the late period of Astral PLC.
     """
     def __init__(self):
-        super(RotaryDialAstral, self).__init__()
+        super(AstralHAL, self).__init__()
 
     def something_astral_specific(self):
         """
@@ -147,13 +147,14 @@ class RotaryDialAstral(RotaryDial):
         """
         print 'Doing something!'
 
-class RotaryDialASEB(RotaryDial):
+class ElektriskHAL(HardwareAbstractionLayer):
     """
-    Subclass of RotaryDial to support the dialer in the AS Elektrisk Bureau phone.
+    Subclass of HardwareAbstractionLayer to support the dialer in the
+    AS Elektrisk Bureau desk phone.
     """
 
     def __init__(self):
-        super(RotaryDialASEB, self).__init__()
+        super(ElektriskHAL, self).__init__()
 
     def something_aseb_specific(self):
         """

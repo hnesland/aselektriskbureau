@@ -10,18 +10,15 @@ import signal
 import sys
 import yaml
 
-from phonedaemon.modules.Ringtone import Ringtone
-from phonedaemon.modules.RotaryDial import RotaryDial
+from phonedaemon.modules.Ringer import Ringer
+from phonedaemon.modules.HardwareAbstractionLayer \
+    import HardwareAbstractionLayer
 from phonedaemon.modules.Webserver import Webserver
 from phonedaemon.modules.DialTimer import DialTimer
-from phonedaemon.modules.linphone import Wrapper
-
-# alternative SIP-implementation
-# from modules.pjsip.SipClient import SipClient
+from modules.pjsip.SipClient import SipClient
 
 
 CALLBACK_QUEUE = Queue.Queue()
-
 
 class TelephoneDaemon(object):
     """
@@ -35,7 +32,7 @@ class TelephoneDaemon(object):
 
     off_hook = False  # Flag: Is the earpiece on or off the hook?
 
-    app_rotary_dial = None
+    app_hal = None
     app_sip_client = None
     app_webserver = None
     app_timer = None
@@ -56,20 +53,28 @@ class TelephoneDaemon(object):
         signal.signal(signal.SIGINT, self.OnSignal)
 
         # TODO: Select tone/hardware ring when latter is implemented.
-        self.app_ringer = Ringtone(self.config)
+        self.app_ringer = Ringer(self.config["soundfiles"],
+                                 self.config["alsadevices"])
 
         # This is to indicate boot complete. Not very realistic, but fun.
-        # self.Ringtone.playfile(config["soundfiles"]["startup"])
-
+        # self.Ringer.playfile(config["soundfiles"]["startup"])
+        
+        self.app_ringer.starthandset("dialtone") # TESTESTESTESTEST REMOVE WHEN YOU MADE IT WORK.
+        #import time
+        #time.sleep(5)
+        #self.app_ringer.earpiece.stop() # END OF TESTESTESTESTESTESTESTESTESTESTESTESTEST BLOCK
+        
+        """
         # Rotary dial
-        self.RotaryDial = RotaryDial()
-        self.RotaryDial.register_callback(NumberCallback=self.got_digit,
+        self.app_hal = HardwareAbstractionLayer()
+        self.app_hal.register_callback(NumberCallback=self.got_digit,
                                          OffHookCallback=self.off_hook,
                                          OnHookCallback=self.on_hook,
                                          OnVerifyHook=self.on_verify_hook)
-
+        """
         # TODO: Way to select SIP backend programmatically/flagly.
 
+        """
         self.app_sip_client = Wrapper.Wrapper()
         self.app_sip_client.StartLinphone()
         self.app_sip_client.SipRegister(self.config["sip"]["username"],
@@ -82,9 +87,9 @@ class TelephoneDaemon(object):
 
         # Start SipClient thread
         self.app_sip_client.start()
-
+        """
         # Web interface to enable remote configuration and debugging.
-        self.app_webserver = Webserver(self)
+        #self.app_webserver = Webserver(self)
 
         raw_input("Waiting.\n")
 
@@ -106,20 +111,20 @@ class TelephoneDaemon(object):
 
         # TODO: State for ringing, don't play tone if ringing :P
         print "Try to start dialtone"
-        self.Ringtone.starthandset(self.config["soundfiles"]["dialtone"])
+        self.app_ringer.starthandset("dialtone")
 
-        self.Ringtone.stop()
+        self.app_ringer.stop()
         if self.app_sip_client is not None:
             self.app_sip_client.SipAnswer()
 
     def on_verify_hook(self, state):
         if not state:
             self.offHook = False
-            self.Ringtone.stophandset()
+            self.app_ringer.stophandset()
 
     def on_incoming_call(self):
         print "[INCOMING]"
-        self.Ringtone.start()
+        self.app_ringer.start()
 
     def on_outgoing_call(self):
         print "[OUTGOING] "
@@ -127,14 +132,14 @@ class TelephoneDaemon(object):
     def on_remote_hungup_call(self):
         print "[HUNGUP] Remote disconnected the call"
         # Now we want to play busy-tone..
-        self.Ringtone.starthandset(self.config["soundfiles"]["busytone"])
+        self.app_ringer.starthandset("busytone")
 
     def on_self_hungup_call(self):
         print "[HUNGUP] Local disconnected the call"
 
     def got_digit(self, digit):
         print "[DIGIT] Got digit: %s" % digit
-        self.Ringtone.stophandset()
+        self.app_ringer.stophandset()
         self.dial_number += str(digit)
         print "[NUMBER] We have: %s" % self.dial_number
 
@@ -163,8 +168,9 @@ class TelephoneDaemon(object):
 
     def OnSignal(self, signal, frame):
         print "[SIGNAL] Shutting down on %s" % signal
-        self.RotaryDial.StopVerifyHook()
-        self.app_sip_client.StopLinphone()
+        #self.app_hal.StopVerifyHook()  # Not using this right now.
+        #self.app_sip_client.StopLinphone()  # Replace with pjsip clean exit
+        self.app_ringer.cleanexit()
         sys.exit(0)
 
 
