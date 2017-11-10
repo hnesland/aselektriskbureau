@@ -39,6 +39,7 @@ class TelephoneDaemon(object):
     app_sip_client = None
     app_webserver = None
     app_timer = None
+    app_ringer = None
 
     def __init__(self):
         print "[STARTUP]"
@@ -55,7 +56,7 @@ class TelephoneDaemon(object):
         signal.signal(signal.SIGINT, self.OnSignal)
 
         # TODO: Select tone/hardware ring when latter is implemented.
-        self.Ringtone = Ringtone(self.config)
+        self.app_ringer = Ringtone(self.config)
 
         # This is to indicate boot complete. Not very realistic, but fun.
         # self.Ringtone.playfile(config["soundfiles"]["startup"])

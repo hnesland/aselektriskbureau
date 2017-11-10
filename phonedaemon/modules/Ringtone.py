@@ -2,6 +2,7 @@ from threading import Timer
 import time
 import alsaaudio
 import wave
+import os
 
 class Ring:
     """
@@ -25,6 +26,8 @@ class Ringtone(Ring):
     Class to implement a software ringer that outputs over ALSA. Should get the
     ALSA device name from config.
     """
+
+    tone_path = None
     shouldring = 0
     ringtone = None
     ringfile = None
@@ -39,6 +42,10 @@ class Ringtone(Ring):
 
     def __init__(self, config):
         self.config = config
+        current_path = os.path.dirname(os.path.abspath(__file__))
+        parent_path = os.path.abspath(os.path.join(current_path, os.pardir))
+        self.tone_path = os.path.join(parent_path, "ringtones")
+        print "[INFO] Loading ringtones from path:", self.tone_path
 
     def start(self):
         self.shouldring = 1
