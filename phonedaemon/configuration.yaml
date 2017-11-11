@@ -7,9 +7,10 @@ soundfiles:
   startup: 'startup1.wav'
   shutdown: 'shutdown1.wav'
   ringtone: 'aselektriskbureau.wav'
-  busytone: 'Old_North_American_busy_signal.wav'
-  timeout: 'roh.wav'
-  dialtone: 'dialtone.wav'
+  busytone: 'uk24_busy.wav'
+  timeout: 'uk24_unobtainable.wav'
+  dialtone: 'uk24_dialtone.wav'
+  ringing: 'uk24_ringing.wav'
 
 sip:
   username: 'sip_username'
