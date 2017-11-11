@@ -4,17 +4,11 @@ Code for using a Raspberry Pi for a rotary phone via SIP. Originally written by 
 
 For consistency, I'm prototyping on a Raspberry Pi 3B, with a final target of a Pi 0W. Using the 'Fe-Pi 2' as a sound card on both, for hardware i2s audio.
 
-This Python-script integrates the old rotary dial and handset on the AS Elektrisk Bureau pulse phone to use SIP. 
-
-It uses GPIO on Raspberry Pi to communicate with the rotary dial, and the onboard soundcard for ringtone. An USB-soundcard is used for mic and handset audio. 
+It uses GPIO on Raspberry Pi to communicate with the rotary dial, and the onboard soundcard for ringtone. An i2s-soundcard is used for mic and handset audio. This was done to reduce latency risks vs USB audio and allow usb gadget use on the Pi 0 for admin access.
 
 Some configuration on the Raspberry Pi is needed to make everything work, including installing the dependencies and configuring PulseAudio and ALSA to enable software mixing of sounds. 
 
-Linphone (linphonec for console) is also required because it handles the SIP-connection. 
-
-There is some code to use Pjsip, but it's not finished. 
-
-For more information on the build, see http://imgur.com/a/HECDL/.
+One key difference compared to the original app is that I'm finishing the pjsip and using ONLY that, as it's a standard library in the Raspbian repo's. Ideally, this software should be a matter of apt-get install and a git clone.
 
 
 ---
@@ -23,7 +17,7 @@ For more information on the build, see http://imgur.com/a/HECDL/.
 
 ### Basic
 
-* Respbery Pi 0W.
+* Raspbery Pi 0W.
 * Fe-Pi 2 audio card.
 * USB cable and power source.
 * Rotary Phone.
@@ -49,42 +43,15 @@ Main modifications: overlays for gadget ethernet mode (Pi 0W only), and the Fe-P
 
 Avahi and SSH-Server should be running and configured so that admin/user can conduct headless network configuration.
 
-### Update your system (Needs verifying)
+Some libraries are required, but are available as raspbian packages:
 
-    # Install pything dependencies. This step is optional.
-    sudo apt-get install python-dev libffi-dev libssl-dev -y
-  
-### Installing linphone (Remove when no-longer needed)
+sudo apt-get install git python-yaml python-pjproject python-tornado python-alsaaudio
 
-Installing Linphone on Raspberry Pi based on https://wiki.linphone.org/wiki/index.php/Raspberrypi:start
-
-    # Download linphone for raspberry. Make sure uit's the newest release.
-    wget http://linphone.org/releases/linphone-python-raspberry/linphone4raspberry-3.8.0-cp27-none-any.whl
-
-    # Rest needs to be done as root.
-
-    # Install pip (Python package manager)
-    sudo apt-get install python-setuptools -y
-    sudo easy_install pip
-
-    # Install wheel packages
-    sudo pip install wheel
-    sudo pip install pip --upgrade
-    sudo pip install setuptools --upgrade
-
-    # Install security update to requests library. Optional (will clear warnings), requires python-dev libffi-dev and libssl-dev installed in step above
-    sudo pip install requests[security]
-
-    # Finaly install linphone package
-    sudo pip install linphone4raspberry-3.8.0-cp27-none-any.whl
-    
-    python -c 'import linphone; print "Ok"'
-    # If it prints just "OK" then it's ok. If it throws a fit, you've fucked up something :)
-
+I'm looking into avoiding the use of pulseaudio if possible, because pulseaudio makes configuration and admin of sounds devices way harder.
 
 ---
 
-# Work log by @swistak. (Remove when no-longer needed)
+# Work log by @swistak. (Remove when no-longer needed - RPF released a new GPIO library which may fix a lot of this anyway.)
 
 First of all I had to figure out how the dial works.
 
@@ -131,7 +98,7 @@ At this point I have a working IO library ( Rio :) ), with working and testable 
 
 * ~~Breakout ringtone to support using high voltage bells (include Open Hardware circuit diagram.)~~ I'd still like to do this, but the phone I'm using turns out to just have fake bells and a speaker on the back, so I won't be implementing it for this build.
 
-* Hardware filter for pulses to simplify code?
+* Hardware filter for pulses to simplify code? This shouldn't be necessary, but until I move from the main code rewrite to messing with the hardware, I won't know.
 
 * Simple baseboard for Pi and audio card, with any necessary amplification implemented cleanly.
 
