@@ -10,7 +10,7 @@ import signal
 import sys
 import yaml
 
-from phonedaemon.modules.Ringer import Ringer
+from phonedaemon.modules.Ringer import AlsaRinger
 from phonedaemon.modules.HardwareAbstractionLayer \
     import HardwareAbstractionLayer
 from phonedaemon.modules.Webserver import Webserver
@@ -53,13 +53,13 @@ class TelephoneDaemon(object):
         signal.signal(signal.SIGINT, self.OnSignal)
 
         # TODO: Select tone/hardware ring when latter is implemented.
-        self.app_ringer = Ringer(self.config["soundfiles"],
+        self.app_ringer = AlsaRinger(self.config["soundfiles"],
                                  self.config["alsadevices"])
 
         # This is to indicate boot complete. Not very realistic, but fun.
         # self.Ringer.playfile(config["soundfiles"]["startup"])
         
-        self.app_ringer.starthandset("dialtone") # TESTESTESTESTEST REMOVE WHEN YOU MADE IT WORK.
+        self.app_ringer.play_dialtone() # TESTESTESTESTEST REMOVE WHEN YOU MADE IT WORK.
         #import time
         #time.sleep(5)
         #self.app_ringer.earpiece.stop() # END OF TESTESTESTESTESTESTESTESTESTESTESTESTEST BLOCK
@@ -170,7 +170,7 @@ class TelephoneDaemon(object):
         print "[SIGNAL] Shutting down on %s" % signal
         #self.app_hal.StopVerifyHook()  # Not using this right now.
         #self.app_sip_client.StopLinphone()  # Replace with pjsip clean exit
-        self.app_ringer.cleanexit()
+        self.app_ringer.clean_exit()
         sys.exit(0)
 
 

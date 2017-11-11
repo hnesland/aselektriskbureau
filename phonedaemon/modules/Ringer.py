@@ -1,8 +1,20 @@
+"""
+Ringer. This module contains classes to represent the 'ringing hardware', the
+phone bell (PCM or analogue bell), the earpiece and the playing of tones
+through both. It is not inherently threaded, though it will call a timer for
+tones which are internally time limited, such as error codes and the busy
+signal. It should be called in a way that other threaded elements like the
+HardwareAbstractionLayer can trigger it's termination, through stop_ringer,
+stop_earpiece and clean_exit. The Device() class can in theory be called
+outside of the module, but is mostly intended for internal use by Ringer()
+"""
+
+
 from threading import Timer
 import time
-import alsaaudio
 import wave
 import os
+import alsaaudio
 
 
 class Device(object):
@@ -58,14 +70,15 @@ class Device(object):
 
     def stop(self):
         '''
-        
+        Cleanly stop playing at the end of the file (play_loop) or end of the
+        current frame (play_once)
         '''
         self.play = False
 
     def close(self):
         """
         This should be called on any abnormal hangup. I also don't know if I
-        need to be explicitly allowing access for the SIP layer once I've 
+        need to be explicitly allowing access for the SIP layer once I've
         finished playing on the earphone device.
         """
         self.kill = True
@@ -74,7 +87,7 @@ class Device(object):
         print "closed ALSA target."
 
 
-class Ring(object):
+class Ringer(object):
     """
     Superclass to support both mechanical ringers and virtual ringers. Should
     handle all the stuff about 'Should I ring', and interfacing with the
@@ -83,32 +96,44 @@ class Ring(object):
     Subclasses should then implement the start/continue/stop ringing functions
     for their specific hardware implementations.
     """
+    def __init__(self):
+        do_nothing = None
+        if do_nothing:
+            print "doing nothing!"
 
+    def something_generic(self):
+        """
+        Do something generic.
+        """
+        print 'Doing something!'
 
-class Ringer(Ring):
+class BellRinger(Ringer):
     """
     Stub class to implement software control for a hardware ringer, like the
     bells of an early manual or automatic telephone from the first half of the
     20th century.
     """
+    def __init__(self):
+        super(BellRinger, self).__init__()
 
+    def something_bell_specific(self):
+        """
+        Do something specific to a hardware bell.
+        """
+        print 'Doing something!'
 
-class Ringer(Ring):
+class AlsaRinger(Ringer):
     """
     Class to implement a software ringer that outputs over ALSA. Should get the
     ALSA device name from config.
     """
 
-    tone_path = None
-    shouldring = 0
+    end_earpiece = False
+    end_ringer = False
     ringtone = None
     ringfile = None
 
-    ringstart = 0
-
-    shouldplayhandset = 0
-    handsetfile = None
-    timerHandset = None
+    tone_path = None
 
     sound_files = None
 
@@ -116,6 +141,7 @@ class Ringer(Ring):
     earpiece = None
 
     def __init__(self, sound_files, alsa_devices):
+        super(AlsaRinger, self).__init__()
         current_path = os.path.dirname(os.path.abspath(__file__))
         parent_path = os.path.abspath(os.path.join(current_path, os.pardir))
         self.tone_path = os.path.join(parent_path, "ringtones")
@@ -129,34 +155,7 @@ class Ringer(Ring):
         self.ringer = Device(alsa_devices["ringer"])
         self.earpiece = Device(alsa_devices["earpiece"])
 
-    def start(self):
-        self.shouldring = 1
-        self.ringtone = Timer(0, self.doring)
-        self.ringtone.start()
-        self.ringstart = time.time()
-
-    def stop(self):
-        self.shouldring = 0
-        if self.ringtone is not None:
-            self.ringtone.cancel()
-
-    def starthandset(self, tone):
-        self.shouldplayhandset = 1
-        self.handsetfile = self.sound_files[tone]
-        if self.timerHandset is not None:
-            print "[RINGTONE] Handset already playing?"
-            return
-
-        self.timerHandset = Timer(0, self.playhandset)
-        self.timerHandset.start()
-
-    def stophandset(self):
-        self.shouldplayhandset = 0
-        if self.timerHandset is not None:
-            self.timerHandset.cancel()
-            self.timerHandset = None
-    
-    def cleanexit(self):
+    def clean_exit(self):
         """
         Cleanly exit by stopping playback and closing any ALSA devices.
         """
@@ -164,42 +163,62 @@ class Ringer(Ring):
         self.ringer.close()
         print "finished clean exit of ringer."
 
-    def playhandset(self):
-        print "Starting dialtone"
+    def stop_earpiece(self):
+        """
+        Stop the earpiece from playing, when a call is dialled or answered.
+        """
+        self.end_earpiece = True
+        time.sleep(0.3)
+        self.earpiece.stop()
 
+    def stop_ringer(self):
+        """
+        Stop the ringer from playing, when answered or the caller hangs up.
+        """
+        self.ringer.stop()
+
+    def play_ringtone(self):
+        """
+        Play the ringtone on an incoming call.
+        """
+        self.ringer.play_loop(self.sound_files["ringtone"], 2)
+
+    def play_dialtone(self):
+        """
+        Play the dialtone when the phone is off-hook and SIP is connected.
+        """
         self.earpiece.play_loop(self.sound_files["dialtone"])
 
+    def play_ringing(self):
+        """
+        Play the ringing tone when dialling is completed and SIP is
+        connecting.
+        """
+        self.earpiece.play_loop(self.sound_files["ringing"], 0.7)
 
-    def playfile(self, tone):
-        wv = wave.open(self.sound_files[tone])
-        # TODO: Get from config, but should NOT be Pulseaudio.
-        self.device = alsaaudio.PCM(card="pulse")
-        self.device.setchannels(wv.getnchannels())
-        self.device.setrate(wv.getframerate())
-        self.device.setperiodsize(320)
+    def play_busy(self):
+        """
+        Play a busy tone when SIP returns an engaged signal.
+        Play for 30s and cut.
+        """
+        self.end_earpiece = False
+        endtimer = Timer(30, self.stop_earpiece)
+        endtimer.start()
+        while not self.end_earpiece:
+            self.earpiece.play_once(self.sound_files["busy"])
+            time.sleep(0.7)
 
-        data = wv.readframes(320)
-        while data:
-            self.device.write(data)
-            data = wv.readframes(320)
-        wv.rewind()
-        wv.close()
+    def play_error(self):
+        """
+        Play an error tone. E.G. use cases:
+         *  Sip fails and handset is lifted.
+         *  Dialling times out without a number entered.
+         *  Sip connection
+        Play for 30s and cut.
+        """
+        self.end_earpiece = False
+        endtimer = Timer(30, self.stop_earpiece)
+        endtimer.start()
+        while not self.end_earpiece:
+            self.earpiece.play_once(self.sound_files["error"])
 
-    def doring(self):
-        if self.ringfile is not None:
-            self.ringfile.rewind()
-        else:
-            self.ringfile = wave.open(self.sound_files["ringtone"], 'rb')
-
-
-
-        while self.shouldring:
-            data = self.ringfile.readframes(320)
-            while data:
-                self.device.write(data)
-                data = self.ringfile.readframes(320)
-
-            self.ringfile.rewind()
-            time.sleep(2)
-            if time.time() - 60 > self.ringstart:
-                self.stop()

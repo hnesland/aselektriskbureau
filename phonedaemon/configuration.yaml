@@ -7,8 +7,8 @@ soundfiles:
   startup: 'startup1.wav'
   shutdown: 'shutdown1.wav'
   ringtone: 'aselektriskbureau.wav'
-  busytone: 'uk24_busy.wav'
-  timeout: 'uk24_unobtainable.wav'
+  busy: 'uk24_busy.wav'
+  error: 'uk24_unobtainable.wav'
   dialtone: 'uk24_dialtone.wav'
   ringing: 'uk24_ringing.wav'
 
