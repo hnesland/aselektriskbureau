@@ -84,7 +84,6 @@ class Device(object):
         self.kill = True
         time.sleep(0.3)
         self.device.close()
-        print "closed ALSA target."
 
 
 class Ringer(object):
@@ -96,40 +95,8 @@ class Ringer(object):
     Subclasses should then implement the start/continue/stop ringing functions
     for their specific hardware implementations.
     """
-    def __init__(self):
-        do_nothing = None
-        if do_nothing:
-            print "doing nothing!"
-
-    def something_generic(self):
-        """
-        Do something generic.
-        """
-        print 'Doing something!'
-
-class BellRinger(Ringer):
-    """
-    Stub class to implement software control for a hardware ringer, like the
-    bells of an early manual or automatic telephone from the first half of the
-    20th century.
-    """
-    def __init__(self):
-        super(BellRinger, self).__init__()
-
-    def something_bell_specific(self):
-        """
-        Do something specific to a hardware bell.
-        """
-        print 'Doing something!'
-
-class AlsaRinger(Ringer):
-    """
-    Class to implement a software ringer that outputs over ALSA. Should get the
-    ALSA device name from config.
-    """
 
     end_earpiece = False
-    end_ringer = False
     ringtone = None
     ringfile = None
 
@@ -137,11 +104,9 @@ class AlsaRinger(Ringer):
 
     sound_files = None
 
-    ringer = None
     earpiece = None
 
-    def __init__(self, sound_files, alsa_devices):
-        super(AlsaRinger, self).__init__()
+    def __init__(self, sound_files=None, alsa_devices=None):
         current_path = os.path.dirname(os.path.abspath(__file__))
         parent_path = os.path.abspath(os.path.join(current_path, os.pardir))
         self.tone_path = os.path.join(parent_path, "ringtones")
@@ -152,7 +117,6 @@ class AlsaRinger(Ringer):
             self.sound_files[sound] = os.path.join(self.tone_path,
                                                    self.sound_files[sound])
 
-        self.ringer = Device(alsa_devices["ringer"])
         self.earpiece = Device(alsa_devices["earpiece"])
 
     def clean_exit(self):
@@ -160,8 +124,6 @@ class AlsaRinger(Ringer):
         Cleanly exit by stopping playback and closing any ALSA devices.
         """
         self.earpiece.close()
-        self.ringer.close()
-        print "finished clean exit of ringer."
 
     def stop_earpiece(self):
         """
@@ -170,18 +132,6 @@ class AlsaRinger(Ringer):
         self.end_earpiece = True
         time.sleep(0.3)
         self.earpiece.stop()
-
-    def stop_ringer(self):
-        """
-        Stop the ringer from playing, when answered or the caller hangs up.
-        """
-        self.ringer.stop()
-
-    def play_ringtone(self):
-        """
-        Play the ringtone on an incoming call.
-        """
-        self.ringer.play_loop(self.sound_files["ringtone"], 2)
 
     def play_dialtone(self):
         """
@@ -221,4 +171,60 @@ class AlsaRinger(Ringer):
         endtimer.start()
         while not self.end_earpiece:
             self.earpiece.play_once(self.sound_files["error"])
+
+
+class BellRinger(Ringer):
+    """
+    Stub class to implement software control for a hardware ringer, like the
+    bells of an early manual or automatic telephone from the first half of the
+    20th century.
+    """
+    def __init__(self, *args, **kwargs):
+        super(BellRinger, self).__init__(*args, **kwargs)
+
+    def stop_ringer(self):
+        """
+        Stop the ringer from sounding, when answered or the caller hangs up.
+        """
+        return None  # Silence the hardware bell.
+
+    def play_ringer(self):
+        """
+        Play the ringer on an incoming call.
+        """
+        return None  # Ring the hardware bell.
+
+
+class AlsaRinger(Ringer):
+    """
+    Class to implement a software ringer that outputs over ALSA. Should get the
+    ALSA device name from config.
+    """
+
+    ringer = None
+
+    def __init__(self, *args, **kwargs):
+        alsa_devices = kwargs["alsa_devices"]
+        super(AlsaRinger, self).__init__(*args, **kwargs)
+        self.ringer = Device(alsa_devices["ringer"])
+
+    def clean_exit(self):
+        """
+        Cleanly exit by stopping playback and closing any ALSA devices.
+        """
+        super(AlsaRinger, self).clean_exit()
+        self.ringer.close()
+
+    def stop_ringer(self):
+        """
+        Stop the ringer from playing, when answered or the caller hangs up.
+        """
+        self.ringer.stop()
+
+    def play_ringer(self):
+        """
+        Play the ringer on an incoming call.
+        """
+        self.ringer.play_loop(self.sound_files["ringtone"], 2)
+
 

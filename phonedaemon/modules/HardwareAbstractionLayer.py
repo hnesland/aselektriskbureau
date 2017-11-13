@@ -6,9 +6,10 @@
 # 0 is 10 pulses
 """
 
-import time
+
 from threading import Timer
-import RPi.GPIO as GPIO
+from RPi import GPIO
+
 
 class HardwareAbstractionLayer(object):
     """
@@ -16,121 +17,106 @@ class HardwareAbstractionLayer(object):
     dialer hardware from different phone conversion projects.
     """
 
-    # TODO: Why are these pins hardcoded? Should be config. So should Pi/not.
-    # We'll be reading BCM GPIO 4 (pin 7 on board)
-    pin_rotary = 4
+    pulse_count = 0  # Count the number of pulses detected
 
-    # We'll be reading on/off hook events from BCM GPIO 3
-    pin_onhook = 3
+    onhook_timer = None  # Timer object to ensure we're on hook
+    debounce_timer = None  # Timer object for debounce cleaning.
 
-    # After 900ms, we assume the rotation is done and we get
-    # the final digit.
-    digit_timeout = 0.9
+    dialling = False
+    hook = False
 
-    # We keep a counter to count each pulse.
-    current_digit = 0
+    pins = {
+        "earpiece": None,
+        "digits": None,
+        "dialling": None
+    }
 
-    # Simple timer for handling the number callback
-    number_timeout = None
+    callback_digit = None
+    callback_onhook = None
+    callback_offhook = None
 
-    last_input = 0
+    pulse_table = {
+        1:1,
+        2:2,
+        3:3,
+        4:4,
+        5:5,
+        6:6,
+        7:7,
+        8:8,
+        9:9,
+        10:0
+    }
 
-    # Timer to ensure we're on hook
-    onhook_timer = None
-    should_verify_hook = True
-    
     def __init__(self):
-        # Set GPIO mode to Broadcom SOC numbering
-        GPIO.setmode(GPIO.BCM)
+        GPIO.setmode(GPIO.BCM)  # Broadcom pin numbers.
 
-        # Listen for rotary movements
-        GPIO.setup(self.pin_rotary, GPIO.IN)
-        GPIO.add_event_detect(self.pin_rotary,
+        GPIO.setup(self.pins["dialling"], GPIO.IN) #Listen for dialling start/end.
+        GPIO.add_event_detect(self.pins["dialling"],
                               GPIO.BOTH,
-                              callback=self.click_counter)
+                              callback=self.dialling_state)
+
+        GPIO.setup(self.pins["digits"], GPIO.IN) #Listen for digits.
+        GPIO.add_event_detect(self.pins["digits"],
+                              GPIO.BOTH,
+                              callback=self.detect_clicks)
 
         # Listen for on/off hooks
-        GPIO.setup(self.pin_onhook, GPIO.IN)
-        GPIO.add_event_detect(self.pin_onhook,
+        GPIO.setup(self.pins["earpiece"], GPIO.IN)
+        GPIO.add_event_detect(self.pins["earpiece"],
                               GPIO.BOTH,
                               callback=self.earpiece_event,
-                              bouncetime=100)
+                              bouncetime=100)  # Is bouncetime a debounce constant!?
 
-        self.onhook_timer = Timer(2, self.verifyHook)
-        self.onhook_timer.start()
-
-    def click_counter(self, channel):
+    def clean_exit(self):
         """
-        Increment counter when click heard, and create digit count timeout.
+        Safely close the GPIO when closing the app.
         """
-        click_input = GPIO.input(self.pin_rotary)
-        #print "[INPUT] %s (%s)" % (click_input, channel)
-        if click_input and not self.last_input:
-            self.current_digit += 1
+        GPIO.cleanup()
 
-            if self.number_timeout is not None:
-                self.number_timeout.cancel()
+    def dialling_state(self, channel):
+        """
+        GPIO detects whether the rotary dial is active.
+        """
+        if not GPIO.input(channel):
+            return None
 
-            self.number_timeout = Timer(self.digit_timeout,
-                                        self.number_detected)
-            self.number_timeout.start()
-        self.last_input = click_input
-   #     time.sleep(0.002)
+        if not self.dialling:
+            self.dialling = True
+        else:
+            pulses = self.pulse_count
+            if pulses % 2:
+                raise IOError("Count is not divisible by 2")
+            self.callback_digit(self.pulse_table[pulses])
+
+    def detect_clicks(self, channel):
+        """
+        GPIO detects a state change on the rotary detection pin. This is where
+        I count the clicks and assemble a digit from the data.
+        """
+        if GPIO.input(channel):
+            self.pulse_count += 1
 
     def earpiece_event(self, channel):
         """
-        Wrapper to separate on/off hook events.
+        GPIO detects a state change
         """
-        hook_input = GPIO.input(self.pin_onhook)
-        if hook_input:
-            self.hook_state = 1
-            self.OffHookCallback()
+        self.hook = bool(GPIO.input(channel))
+        if self.hook:
+            self.callback_onhook()
         else:
-            self.hook_state = 0
-            self.OnHookCallback()
+            self.callback_offhook()
 
-    def number_detected(self):
-        """
-        If a number has been detected, callback to calling application
-        """
-        if self.current_digit == 10:
-            self.current_digit = 0
-        self.NumberCallback(self.current_digit)
-        self.current_digit = 0
-
-    def register_callback(self,
-                          NumberCallback,
-                          OffHookCallback,
-                          OnHookCallback,
-                          OnVerifyHook):
+    def register_callbacks(self,
+                           callback_digit,
+                           callback_onhook,
+                           callback_offhook):
         """
         Register callbacks for the interface with the calling application
         """
-        self.NumberCallback = NumberCallback
-        self.OffHookCallback = OffHookCallback
-        self.OnHookCallback = OnHookCallback
-        self.OnVerifyHook = OnVerifyHook
-
-        hook_input = GPIO.input(self.pin_onhook)
-        if hook_input:
-            self.OffHookCallback()
-        else:
-            self.OnHookCallback()
-
-    def StopVerifyHook(self):
-        """
-        Set state to stop verifying hook.
-        """
-        self.should_verify_hook = False
-
-    def verifyHook(self):
-        """
-        Verify whether the hook is on.
-        """
-        while self.should_verify_hook:
-            state = GPIO.input(self.pin_onhook)
-            self.OnVerifyHook(state)
-            time.sleep(1)
+        self.callback_digit = callback_digit
+        self.callback_onhook = callback_onhook
+        self.callback_offhook = callback_offhook
 
 
 class AstralHAL(HardwareAbstractionLayer):
@@ -139,13 +125,13 @@ class AstralHAL(HardwareAbstractionLayer):
     the late period of Astral PLC.
     """
     def __init__(self):
+        self.pins = {
+            "earpiece": 22,
+            "digits" : 17,
+            "dialling": 27
+        }
         super(AstralHAL, self).__init__()
 
-    def something_astral_specific(self):
-        """
-        Do something specific to the Astral wall phone.
-        """
-        print 'Doing something!'
 
 class ElektriskHAL(HardwareAbstractionLayer):
     """
@@ -154,12 +140,11 @@ class ElektriskHAL(HardwareAbstractionLayer):
     """
 
     def __init__(self):
+        self.pins = {
+            "earpiece": 3,
+            "digits": 4,
+            "dialling": None
+        }
         super(ElektriskHAL, self).__init__()
-
-    def something_aseb_specific(self):
-        """
-        Do something specific to the AS Elektrisk Bureau desk phone.
-        """
-        print 'Doing something!'
 
 
