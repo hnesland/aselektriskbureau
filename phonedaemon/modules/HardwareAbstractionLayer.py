@@ -1,13 +1,10 @@
 """
-# Rotary Dial Parser
-# Expects the following hardware rules:
-# 1 is 1 pulse
-# 9 is 9 pulses
-# 0 is 10 pulses
+This module implements the interface with the hardware of the phone, the
+earpiece hook and the rotary dialler.
 """
 
 
-from threading import Timer
+# from threading import Timer  # Not currently needed with Astral hardware.
 from RPi import GPIO
 
 
@@ -83,6 +80,7 @@ class HardwareAbstractionLayer(object):
 
         if not self.dialling:
             self.dialling = True
+            self.pulse_count = 0
         else:
             pulses = self.pulse_count
             if pulses % 2:

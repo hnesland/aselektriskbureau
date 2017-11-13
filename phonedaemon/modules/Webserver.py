@@ -1,10 +1,3 @@
-import tornado.web
-import os.path
-from tornado.options import define, options, parse_command_line
-
-define("port", default=8080, help="run on the given port", type=int)
-define("debug", default=False, help="run in debug mode")
-
 """
 This needs waaaaay fleshing out. This should provide a web config page for at
 least the sip and audio device parts (ringer volume?) and a web dialler/API
@@ -16,18 +9,36 @@ Nice to haves:
   * Diagnostic controls.
 """
 
+
+import tornado.web
+from tornado.options import define, options, parse_command_line
+
+
+define("port", default=8080, help="run on the given port", type=int)
+define("debug", default=False, help="run in debug mode")
+
+
 class MainHandler(tornado.web.RequestHandler):
+    """
+    Handle requests from remote clients.
+    """
     def get(self):
+        """
+        Respond to a GET request.
+        """
         self.render("../web/index.html")
 
-class Webserver:
+class Webserver(object):
+    """
+    This class runs the actual server object.
+    """
     app = None
-    Telephone = None
+    telephone = None
 
-    def __init__(self, Telephone):
+    def __init__(self, telephone):
         parse_command_line()
-        
-        self.Telephone = Telephone
+
+        self.telephone = telephone
 
         self.app = tornado.web.Application(
             [
