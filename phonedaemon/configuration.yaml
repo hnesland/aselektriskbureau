@@ -19,9 +19,9 @@ sip:
   port: 5060
 
 alsadevices:
-  ringer: 'hw:CARD=ALSA,DEV=0'
-  earpiece: 'hw:CARD=Audio,DEV=0'
-  mouthpiece: 'hw:CARD=Audio,DEV=0'
+  ringer: 'plug:ringer'
+  earpiece: 'plug:earpiece'
+  mouthpiece: 'plug:mouthpiece'
 
 diallingtimeout: 2
 ...
