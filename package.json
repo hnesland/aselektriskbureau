@@ -1,0 +1,29 @@
+{
+  "name": "1910called",
+  "version": "0.0.1",
+  "description": "A simple internet phone stack for upcycling with Pi.",
+  "main": "1910called.mjs",
+  "dependencies": {
+    "rpi-gpio": "^2.1.7",
+    "speaker": "^0.5.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mo-g/1910calleditwantsitsphoneback.git"
+  },
+  "keywords": [
+    "phone",
+    "retro",
+    "raspification"
+  ],
+  "author": "mo-g",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/mo-g/1910calleditwantsitsphoneback.git"
+  },
+  "homepage": "https://github.com/mo-g/1910calleditwantsitsphoneback.git#readme"
+}
