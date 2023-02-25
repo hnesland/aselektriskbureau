@@ -1,0 +1,32 @@
+{
+    "name": "ecma-rotarydialler",
+    "version": "0.0.1",
+    "type": "module",
+    "description": "A Raspberry Pi library for mechanical rotary diallers, written in ECMAScript",
+    "keywords": [
+      "phone",
+      "rotary dialler",
+      "raspification"
+    ],
+    "main": "index.mjs",
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/mo-g/1910calleditwantsitsphoneback.git"
+    },
+    "author": {
+      "name" : "Gray",
+      "email" : "mo-g@spindoctor.dev",
+      "url" : "https://github.com/mo-g"
+    },
+    "license": "AGPL-3.0",
+    "bugs": {
+      "url": "https://github.com/mo-g/1910calleditwantsitsphoneback.git/issues"
+    },
+    "homepage": "https://github.com/mo-g/1910calleditwantsitsphoneback.gitreadme",
+    "dependencies": {
+    }
+  }
+  

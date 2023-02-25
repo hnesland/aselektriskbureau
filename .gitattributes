@@ -1,0 +1,2 @@
+*.py linguist-detectable=false
+*.yaml linguist-detectable=false
